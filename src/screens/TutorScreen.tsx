@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState, useCallback } from 'react';
+import React, { useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { colors, spacing, font, radius } from '../theme/theme';
+import { spacing, font, radius, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useLLM } from '../llm/LLMProvider';
 import { ChatMessage } from '../types';
 import { AppButton } from '../components/ui';
@@ -27,6 +28,8 @@ const SUGGESTIONS = [
 
 export default function TutorScreen({ route, navigation }: Props) {
   const { topicTitle } = route.params ?? {};
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const llm = useLLM();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -139,8 +142,9 @@ export default function TutorScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   hello: { color: colors.text, fontSize: font.h3, fontWeight: '800', marginTop: spacing.md },
   helloSub: { color: colors.textMuted, fontSize: font.small, marginTop: spacing.xs, marginBottom: spacing.lg },
@@ -159,7 +163,7 @@ const styles = StyleSheet.create({
   bubble: { borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, maxWidth: '90%' },
   userBubble: { backgroundColor: colors.primary, alignSelf: 'flex-end' },
   aiBubble: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start' },
-  userText: { color: '#04122E', fontSize: font.body, lineHeight: 21, fontWeight: '600' },
+  userText: { color: colors.onBright, fontSize: font.body, lineHeight: 21, fontWeight: '600' },
   aiText: { color: colors.text, fontSize: font.body, lineHeight: 22 },
   aiTag: { color: colors.accent, fontSize: font.tiny, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
   inputRow: {
@@ -189,5 +193,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: spacing.sm,
   },
-  sendText: { color: '#04122E', fontSize: font.h3, fontWeight: '800' },
+  sendText: { color: colors.onBright, fontSize: font.h3, fontWeight: '800' },
 });

@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, font } from '../theme/theme';
+import { font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 
 export function ProgressRing({
   progress,
   size = 120,
   strokeWidth = 12,
-  color = colors.primary,
+  color,
   label,
   sublabel,
 }: {
@@ -18,6 +19,9 @@ export function ProgressRing({
   label?: string;
   sublabel?: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const strokeColor = color ?? colors.primary;
   const p = Math.max(0, Math.min(1, progress));
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
@@ -37,7 +41,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={color}
+          stroke={strokeColor}
           strokeWidth={strokeWidth}
           strokeDasharray={`${c} ${c}`}
           strokeDashoffset={offset}
@@ -55,8 +59,9 @@ export function ProgressRing({
   );
 }
 
-const styles = StyleSheet.create({
-  center: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: font.h1, fontWeight: '800', color: colors.text },
-  sub: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2 },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    center: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    label: { fontSize: font.h1, fontWeight: '800', color: colors.text },
+    sub: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2 },
+  });

@@ -6,7 +6,8 @@ import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, StatTile, SectionHeader } from '../components/ui';
 import { ProgressRing } from '../components/ProgressRing';
 import { MasteryBar } from '../components/MasteryBar';
-import { colors, spacing, font } from '../theme/theme';
+import { ThemeColors, spacing, font } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { SUBJECTS, EXAM_SPEC } from '../data/curriculum';
 import {
@@ -20,6 +21,8 @@ import {
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function DashboardScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const mastery = useStore((s) => s.progress.mastery);
   const sr = useStore((s) => s.progress.sr);
@@ -35,7 +38,7 @@ export default function DashboardScreen() {
     readyPct >= passMark ? colors.success : readyPct >= 50 ? colors.warn : colors.primary;
 
   return (
-    <Screen>
+    <Screen topInset>
       <Text style={styles.h1}>Series 65 Mastery</Text>
       <Text style={styles.sub}>Uniform Investment Adviser Law Exam</Text>
 
@@ -119,7 +122,8 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   sub: { fontSize: font.small, color: colors.textMuted, marginBottom: spacing.lg },
   readyRow: { flexDirection: 'row', alignItems: 'center' },

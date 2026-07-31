@@ -5,7 +5,8 @@ import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Body, Divider } from '../components/ui';
 import { ProgressRing } from '../components/ProgressRing';
 import { MasteryBar } from '../components/MasteryBar';
-import { colors, spacing, font } from '../theme/theme';
+import { spacing, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { EXAM_SPEC } from '../data/curriculum';
 import { BANK_BY_ID } from '../mastery/selection';
@@ -16,6 +17,8 @@ export default function ExamResultScreen({ route, navigation }: Props) {
   const { resultId } = route.params;
   const result = useStore((s) => s.progress.examHistory.find((r) => r.id === resultId));
   const [showMisses, setShowMisses] = useState(false);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   if (!result) {
     return (
@@ -108,7 +111,8 @@ export default function ExamResultScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   title: { fontSize: font.h3, fontWeight: '800', color: colors.text, marginBottom: spacing.md },
   verdict: { fontSize: font.h1, fontWeight: '900', textAlign: 'center' },
   ringWrap: { alignItems: 'center', marginVertical: spacing.lg },

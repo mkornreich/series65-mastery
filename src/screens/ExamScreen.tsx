@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useRef, useState, useEffect, useCallback } from 'react';
+import React, { useLayoutEffect, useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
-import { colors, spacing, font, radius } from '../theme/theme';
+import { spacing, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { generateExam } from '../exam/generator';
 import { scoreExam } from '../exam/scoring';
 import { EXAM_SPEC } from '../data/curriculum';
@@ -23,6 +24,8 @@ function fmt(sec: number): string {
 }
 
 export default function ExamScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const addExamResult = useStore((s) => s.addExamResult);
 
   const examRef = useRef(generateExam());
@@ -181,7 +184,7 @@ export default function ExamScreen({ navigation }: Props) {
                     isCurrent && { borderColor: colors.accent, borderWidth: 2 },
                   ]}
                 >
-                  <Text style={[styles.cellText, answered && { color: '#04122E' }]}>{i + 1}</Text>
+                  <Text style={[styles.cellText, answered && { color: colors.onBright }]}>{i + 1}</Text>
                 </Pressable>
               );
             })}
@@ -198,7 +201,7 @@ export default function ExamScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
   counter: { color: colors.text, fontSize: font.small, fontWeight: '800' },
   answered: { color: colors.textMuted, fontSize: font.small, fontWeight: '600' },

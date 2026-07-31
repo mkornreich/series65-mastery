@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,23 +11,34 @@ import {
   StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, radius, font } from '../theme/theme';
+import { spacing, radius, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
+
+function useStyles() {
+  const { colors } = useTheme();
+  return useMemo(() => makeStyles(colors), [colors]);
+}
 
 export function Screen({
   children,
   scroll = true,
   contentStyle,
   padded = true,
+  topInset = false,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
   padded?: boolean;
+  /** Pad for the status bar on screens that have no navigation header. */
+  topInset?: boolean;
 }) {
   const insets = useSafeAreaInsets();
+  const styles = useStyles();
   const pad = padded ? spacing.lg : 0;
   const base: ViewStyle = {
     paddingHorizontal: pad,
+    paddingTop: topInset ? insets.top + spacing.sm : 0,
     paddingBottom: insets.bottom + spacing.xxl,
   };
   if (scroll) {
@@ -55,6 +66,7 @@ export function Card({
   onPress?: () => void;
   accent?: string;
 }) {
+  const styles = useStyles();
   const content = (
     <View
       style={[
@@ -96,6 +108,8 @@ export function AppButton({
   icon?: string;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   const bg =
     variant === 'primary'
       ? colors.primary
@@ -105,7 +119,7 @@ export function AppButton({
       ? colors.surfaceAlt
       : 'transparent';
   const fg =
-    variant === 'primary' || variant === 'danger' ? '#04122E' : colors.text;
+    variant === 'primary' || variant === 'danger' ? colors.onBright : colors.text;
   return (
     <Pressable
       onPress={disabled || loading ? undefined : onPress}
@@ -130,16 +144,18 @@ export function AppButton({
 
 export function Pill({
   label,
-  color = colors.textMuted,
+  color,
   bg,
 }: {
   label: string;
   color?: string;
   bg?: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
-    <View style={[styles.pill, { backgroundColor: bg ?? 'rgba(255,255,255,0.06)' }]}>
-      <Text style={[styles.pillText, { color }]}>{label}</Text>
+    <View style={[styles.pill, { backgroundColor: bg ?? colors.surfaceAlt }]}>
+      <Text style={[styles.pillText, { color: color ?? colors.textMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -147,15 +163,17 @@ export function Pill({
 export function StatTile({
   value,
   label,
-  color = colors.text,
+  color,
 }: {
   value: string;
   label: string;
   color?: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={[styles.statValue, { color: color ?? colors.text }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
@@ -168,6 +186,7 @@ export function SectionHeader({
   title: string;
   action?: React.ReactNode;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -177,6 +196,7 @@ export function SectionHeader({
 }
 
 export function Divider() {
+  const styles = useStyles();
   return <View style={styles.divider} />;
 }
 
@@ -189,6 +209,7 @@ export function Body({
   muted?: boolean;
   style?: StyleProp<TextStyle>;
 }) {
+  const { colors } = useTheme();
   return (
     <Text
       style={[
@@ -201,42 +222,43 @@ export function Body({
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  button: {
-    borderRadius: radius.md,
-    paddingVertical: 14,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ghostBorder: { borderWidth: 1, borderColor: colors.border },
-  buttonText: { fontSize: font.body, fontWeight: '700' },
-  pill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  pillText: { fontSize: font.tiny, fontWeight: '700', letterSpacing: 0.3 },
-  stat: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: font.h2, fontWeight: '800' },
-  statLabel: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: { fontSize: font.h3, fontWeight: '800', color: colors.text },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    flex: { flex: 1 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    button: {
+      borderRadius: radius.md,
+      paddingVertical: 14,
+      paddingHorizontal: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ghostBorder: { borderWidth: 1, borderColor: colors.border },
+    buttonText: { fontSize: font.body, fontWeight: '700' },
+    pill: {
+      borderRadius: radius.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      alignSelf: 'flex-start',
+    },
+    pillText: { fontSize: font.tiny, fontWeight: '700', letterSpacing: 0.3 },
+    stat: { flex: 1, alignItems: 'center' },
+    statValue: { fontSize: font.h2, fontWeight: '800' },
+    statLabel: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    sectionTitle: { fontSize: font.h3, fontWeight: '800', color: colors.text },
+    divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  });

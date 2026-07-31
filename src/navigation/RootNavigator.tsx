@@ -2,8 +2,10 @@ import React from 'react';
 import { Text } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList, TabParamList } from './types';
-import { colors, font } from '../theme/theme';
+import { font } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import LearnScreen from '../screens/LearnScreen';
@@ -38,6 +40,8 @@ function icon(name: keyof TabParamList) {
 }
 
 function Tabs() {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -45,8 +49,8 @@ function Tabs() {
         tabBarStyle: {
           backgroundColor: colors.bgAlt,
           borderTopColor: colors.border,
-          height: 62,
-          paddingBottom: 8,
+          height: 58 + insets.bottom,
+          paddingBottom: 6 + insets.bottom,
           paddingTop: 6,
         },
         tabBarActiveTintColor: colors.primary,
@@ -68,6 +72,7 @@ function Tabs() {
 }
 
 export default function RootNavigator() {
+  const { colors } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{

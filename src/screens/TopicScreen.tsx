@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import { Text, StyleSheet, View, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Pill, Body, Divider } from '../components/ui';
 import { MasteryBar } from '../components/MasteryBar';
-import { colors, spacing, font, masteryLabel } from '../theme/theme';
+import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getComponent, getSubject } from '../data/curriculum';
 import { STUDY_NOTES } from '../data/studyNotes';
@@ -19,6 +20,8 @@ import { useLLM } from '../llm/LLMProvider';
 type Props = NativeStackScreenProps<RootStackParamList, 'Topic'>;
 
 function Bullets({ title, items, color }: { title: string; items?: string[]; color?: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   if (!items || !items.length) return null;
   return (
     <View style={{ marginTop: spacing.md }}>
@@ -40,6 +43,8 @@ export default function TopicScreen({ route, navigation }: Props) {
   const mastery = useStore((s) => s.progress.mastery)[componentId];
   const llm = useLLM();
   const [generating, setGenerating] = useState(false);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: subject ? `Section ${subject.code}` : 'Topic' });
@@ -182,7 +187,8 @@ export default function TopicScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text, marginTop: spacing.sm, marginBottom: spacing.md },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   statusLabel: { color: colors.textMuted, fontSize: font.small, fontWeight: '700' },

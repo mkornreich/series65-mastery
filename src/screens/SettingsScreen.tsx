@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Switch, Pressable, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Body, SectionHeader } from '../components/ui';
-import { colors, spacing, font, radius } from '../theme/theme';
-import { useStore } from '../store/useStore';
+import { spacing, font, radius, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
+import { useStore, ThemeMode } from '../store/useStore';
 import { useLLM } from '../llm/LLMProvider';
 import { MODEL_BY_ID } from '../data/models';
 
@@ -20,6 +21,8 @@ function Row({
   desc?: string;
   right: React.ReactNode;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.row}>
       <View style={{ flex: 1, paddingRight: spacing.md }}>
@@ -46,6 +49,8 @@ function Stepper({
   max: number;
   fmt?: (v: number) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.stepper}>
       <Pressable style={styles.stepBtn} onPress={() => onChange(Math.max(min, value - step))}>
@@ -59,7 +64,45 @@ function Stepper({
   );
 }
 
+function ThemeSelector() {
+  const { colors, mode, setMode } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const options: { key: ThemeMode; label: string }[] = [
+    { key: 'system', label: 'System' },
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+  ];
+  return (
+    <View style={styles.segment}>
+      {options.map((o) => {
+        const active = mode === o.key;
+        return (
+          <Pressable
+            key={o.key}
+            onPress={() => setMode(o.key)}
+            style={[
+              styles.segmentItem,
+              active && { backgroundColor: colors.primary },
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                { color: active ? colors.onBright : colors.textMuted },
+              ]}
+            >
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const llm = useLLM();
   const settings = useStore((s) => s.settings);
@@ -88,21 +131,25 @@ export default function SettingsScreen() {
     : colors.warn;
 
   return (
-    <Screen>
+    <Screen topInset>
       <Text style={styles.h1}>Settings</Text>
+
+      <SectionHeader title="Appearance" />
+      <Card>
+        <Row label="Theme" desc="Follow the system setting, or force light or dark." right={null as any} />
+        <ThemeSelector />
+      </Card>
 
       <SectionHeader title="On-device AI" />
       <Card>
         <Row
           label="AI model"
           desc={statusText}
-          right={
-            <View style={[styles.dot, { backgroundColor: statusColor }]} />
-          }
+          right={<View style={[styles.dot, { backgroundColor: statusColor }]} />}
         />
         <Body muted style={{ marginTop: spacing.xs }}>
-          The tutor and question generator run fully on your device — no internet needed
-          once a model is downloaded.
+          The tutor and question generator run fully on your device — Gemini Nano on
+          supported Pixels, or a small model you download.
         </Body>
         <AppButton
           title="Choose / manage models"
@@ -114,7 +161,6 @@ export default function SettingsScreen() {
         {!llm.available && (
           <Text style={styles.warn}>
             On-device inference needs a development build (it isn’t available in Expo Go).
-            See the README to build the app.
           </Text>
         )}
       </Card>
@@ -134,7 +180,7 @@ export default function SettingsScreen() {
           />
           {llm.status === 'ready' ? (
             <AppButton title="Unload model (free memory)" variant="ghost" onPress={() => llm.unload()} style={{ marginTop: spacing.sm }} />
-          ) : (
+          ) : activeModel.kind !== 'aicore' ? (
             <AppButton
               title="Load model now"
               variant="ghost"
@@ -142,7 +188,7 @@ export default function SettingsScreen() {
               onPress={() => llm.loadModel(activeModel.id)}
               style={{ marginTop: spacing.sm }}
             />
-          )}
+          ) : null}
         </Card>
       )}
 
@@ -200,7 +246,7 @@ export default function SettingsScreen() {
       <Card>
         <Row
           label="GPU layers"
-          desc="0 = CPU only (most compatible). Raise on capable devices for speed."
+          desc="0 = CPU only (most compatible). Raise on capable devices for speed. (Downloaded models only.)"
           right={
             <Stepper
               value={settings.nGpuLayers}
@@ -250,16 +296,31 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowLabel: { color: colors.text, fontSize: font.body, fontWeight: '700' },
-  rowDesc: { color: colors.textMuted, fontSize: font.small, marginTop: 2, lineHeight: 17 },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-  warn: { color: colors.warn, fontSize: font.small, marginTop: spacing.md, lineHeight: 18 },
-  stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceAlt, borderRadius: radius.md },
-  stepBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  stepBtnText: { color: colors.text, fontSize: font.h3, fontWeight: '800' },
-  stepVal: { color: colors.text, fontSize: font.small, fontWeight: '700', minWidth: 44, textAlign: 'center' },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    rowLabel: { color: colors.text, fontSize: font.body, fontWeight: '700' },
+    rowDesc: { color: colors.textMuted, fontSize: font.small, marginTop: 2, lineHeight: 17 },
+    dot: { width: 12, height: 12, borderRadius: 6 },
+    divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+    warn: { color: colors.warn, fontSize: font.small, marginTop: spacing.md, lineHeight: 18 },
+    stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceAlt, borderRadius: radius.md },
+    stepBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+    stepBtnText: { color: colors.text, fontSize: font.h3, fontWeight: '800' },
+    stepVal: { color: colors.text, fontSize: font.small, fontWeight: '700', minWidth: 44, textAlign: 'center' },
+    segment: {
+      flexDirection: 'row',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      padding: 3,
+      marginTop: spacing.md,
+    },
+    segmentItem: {
+      flex: 1,
+      paddingVertical: 9,
+      alignItems: 'center',
+      borderRadius: radius.sm,
+    },
+    segmentText: { fontSize: font.small, fontWeight: '700' },
+  });

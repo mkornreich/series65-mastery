@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Body, StatTile } from '../components/ui';
-import { colors, spacing, font } from '../theme/theme';
+import { spacing, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { EXAM_SPEC } from '../data/curriculum';
 import { canBuildFullExam } from '../exam/generator';
 import { useStore } from '../store/useStore';
@@ -15,9 +16,11 @@ export default function ExamIntroScreen() {
   const navigation = useNavigation<Nav>();
   const history = useStore((s) => s.progress.examHistory);
   const ready = canBuildFullExam();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <Screen>
+    <Screen topInset>
       <Text style={styles.h1}>Practice Exam</Text>
       <Text style={styles.sub}>A full-length, blueprint-weighted mock exam.</Text>
 
@@ -76,7 +79,8 @@ export default function ExamIntroScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   sub: { fontSize: font.small, color: colors.textMuted, marginBottom: spacing.lg },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },

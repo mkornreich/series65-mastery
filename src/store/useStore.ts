@@ -10,8 +10,11 @@ import {
 } from '../types';
 import { updateComponentMastery, scheduleSR, gradeFor } from '../mastery/engine';
 
+export type ThemeMode = 'system' | 'dark' | 'light';
+
 export interface Settings {
   activeModelId: string | null;
+  themeMode: ThemeMode;
   genParams: GenerationParams;
   nGpuLayers: number;
   nCtx: number;
@@ -50,6 +53,7 @@ interface StoreState {
 
 const DEFAULT_SETTINGS: Settings = {
   activeModelId: null,
+  themeMode: 'system',
   genParams: { temperature: 0.4, topP: 0.9, maxTokens: 512 },
   nGpuLayers: 0,
   nCtx: 2048,

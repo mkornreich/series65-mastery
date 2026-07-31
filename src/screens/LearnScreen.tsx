@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card } from '../components/ui';
 import { MasteryBar } from '../components/MasteryBar';
-import { colors, spacing, font } from '../theme/theme';
+import { spacing, font } from '../theme/theme';
+import { ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { SUBJECTS } from '../data/curriculum';
 import { subjectMastery } from '../mastery/engine';
@@ -22,11 +24,13 @@ function levelFor(score: number) {
 }
 
 export default function LearnScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const mastery = useStore((s) => s.progress.mastery);
 
   return (
-    <Screen>
+    <Screen topInset>
       <Text style={styles.h1}>Learn</Text>
       <Text style={styles.sub}>
         The four exam sections and their blueprint weights. Study each topic, then
@@ -63,20 +67,21 @@ export default function LearnScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
-  sub: { fontSize: font.small, color: colors.textMuted, marginBottom: spacing.lg, lineHeight: 19 },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  badge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  badgeText: { color: colors.text, fontWeight: '800', fontSize: font.h3 },
-  title: { color: colors.text, fontSize: font.body, fontWeight: '800' },
-  meta: { color: colors.textMuted, fontSize: font.small, marginTop: 2 },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
+    sub: { fontSize: font.small, color: colors.textMuted, marginBottom: spacing.lg, lineHeight: 19 },
+    row: { flexDirection: 'row', alignItems: 'center' },
+    badge: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    badgeText: { color: colors.text, fontWeight: '800', fontSize: font.h3 },
+    title: { color: colors.text, fontSize: font.body, fontWeight: '800' },
+    meta: { color: colors.textMuted, fontSize: font.small, marginTop: 2 },
+  });

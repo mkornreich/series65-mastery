@@ -5,7 +5,8 @@ import { RootStackParamList, AnswerRecord } from '../navigation/types';
 import { Question } from '../types';
 import { Screen, Card, AppButton, Body } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
-import { colors, spacing, font, radius } from '../theme/theme';
+import { spacing, font, radius, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { useLLM } from '../llm/LLMProvider';
 import {
@@ -52,6 +53,8 @@ export default function QuizScreen({ route, navigation }: Props) {
   const flagged = useStore((s) => s.progress.flagged);
   const aiEnabled = useStore((s) => s.settings.aiExplanations);
   const llm = useLLM();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // Resolve the working set once.
   const [questions, setQuestions] = useState<Question[]>(() =>
@@ -259,7 +262,8 @@ export default function QuizScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   progressTrack: {
     height: 6,
     backgroundColor: colors.surfaceAlt,

@@ -39,14 +39,21 @@ pretest), 180 minutes, and a pass mark of 92/130 across four sections weighted
   score report. Past attempts are saved.
 
 ### 🤖 On‑device AI (private, offline)
-- A small language model runs **entirely on the phone** via
-  [`llama.rn`](https://github.com/mybigday/llama.rn) (llama.cpp). No data leaves
-  the device.
-- Used to **explain answers**, act as an interactive **tutor**, and **generate
-  fresh practice questions** for any topic.
-- **Choose your model in Settings → Choose / manage models**: download one of
-  several curated GGUF models (Llama 3.2 1B/3B, Qwen2.5 1.5B, Gemma 2 2B,
-  SmolLM2 1.7B), set it active, and tune temperature / context size / GPU layers.
+- Runs **entirely on the phone** — no data leaves the device. Used to **explain
+  answers**, act as an interactive **tutor**, and **generate fresh practice
+  questions** for any topic.
+- Two engines, chosen in **Settings → Choose / manage models**:
+  - **Gemini Nano (built‑in)** — Google’s system on‑device model via **AICore**,
+    on supported Pixel devices. No download; the app detects availability and
+    talks to the system model directly (native module in `modules/gemini-nano`).
+  - **Downloadable GGUF models** via [`llama.rn`](https://github.com/mybigday/llama.rn)
+    (llama.cpp): Llama 3.2 1B/3B, Qwen2.5 1.5B, Gemma 2 2B, SmolLM2 1.7B. Tune
+    temperature / context size / GPU layers.
+
+### 🎨 Light & dark themes
+- Full light and dark palettes with a **Settings → Appearance** toggle
+  (System / Light / Dark). "System" follows the OS. Layout respects the status
+  bar and the bottom gesture area via safe‑area insets.
 
 ### 🧠 Question bank
 - **211 original practice questions** with explanations, authored to the

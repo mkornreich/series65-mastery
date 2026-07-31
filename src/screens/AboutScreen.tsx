@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Card, Body, Divider } from '../components/ui';
-import { colors, spacing, font } from '../theme/theme';
+import { spacing, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { EXAM_SPEC, SUBJECTS } from '../data/curriculum';
 import { totalBankQuestions } from '../mastery/selection';
 
 export default function AboutScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Screen>
       <Text style={styles.h1}>About</Text>
@@ -62,7 +65,8 @@ export default function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   h1: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginTop: spacing.sm, marginBottom: spacing.md },
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text },
   h3: { fontSize: font.h3, fontWeight: '800', color: colors.text },

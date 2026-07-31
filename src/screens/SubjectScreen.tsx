@@ -1,10 +1,11 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Pill } from '../components/ui';
 import { MasteryBar } from '../components/MasteryBar';
-import { colors, spacing, font, masteryLabel } from '../theme/theme';
+import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
@@ -13,6 +14,8 @@ import { bankByComponent } from '../mastery/selection';
 type Props = NativeStackScreenProps<RootStackParamList, 'Subject'>;
 
 export default function SubjectScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { subjectId } = route.params;
   const subject = getSubject(subjectId);
   const mastery = useStore((s) => s.progress.mastery);
@@ -83,7 +86,8 @@ export default function SubjectScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   meta: { fontSize: font.small, color: colors.textMuted, marginTop: 4 },
   sectionTitle: {

@@ -4,12 +4,15 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Body, Divider } from '../components/ui';
 import { ProgressRing } from '../components/ProgressRing';
-import { colors, spacing, font } from '../theme/theme';
+import { spacing, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { COMPONENT_BY_ID } from '../data/curriculum';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizResult'>;
 
 export default function QuizResultScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { title, records, config } = route.params;
   const total = records.length;
   const correct = records.filter((r) => r.correct).length;
@@ -101,7 +104,8 @@ export default function QuizResultScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   title: { fontSize: font.h3, fontWeight: '800', color: colors.text, textAlign: 'center' },
   ringWrap: { alignItems: 'center', marginVertical: spacing.lg },
   actions: { marginBottom: spacing.md },

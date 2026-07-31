@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { colors, spacing, radius, font } from '../theme/theme';
+import { spacing, radius, font, ThemeColors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import { Question } from '../types';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
@@ -20,6 +21,8 @@ export function QuestionBlock({
   index?: number;
   total?: number;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View>
       {index != null && total != null && (
@@ -68,37 +71,38 @@ export function QuestionBlock({
   );
 }
 
-const styles = StyleSheet.create({
-  counter: {
-    fontSize: font.tiny,
-    color: colors.textMuted,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    textTransform: 'uppercase',
-  },
-  stem: {
-    fontSize: font.h3,
-    lineHeight: 26,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  choice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  letter: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  letterText: { color: '#04122E', fontWeight: '800', fontSize: font.small },
-  choiceText: { flex: 1, color: colors.text, fontSize: font.body, lineHeight: 21 },
-});
+const makeStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    counter: {
+      fontSize: font.tiny,
+      color: colors.textMuted,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      marginBottom: spacing.sm,
+      textTransform: 'uppercase',
+    },
+    stem: {
+      fontSize: font.h3,
+      lineHeight: 26,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    choice: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    letter: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing.md,
+    },
+    letterText: { color: colors.onBright, fontWeight: '800', fontSize: font.small },
+    choiceText: { flex: 1, color: colors.text, fontSize: font.body, lineHeight: 21 },
+  });

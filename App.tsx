@@ -4,34 +4,44 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   NavigationContainer,
   DarkTheme,
+  DefaultTheme,
   Theme,
 } from '@react-navigation/native';
 import RootNavigator from './src/navigation/RootNavigator';
 import { LLMProvider } from './src/llm/LLMProvider';
-import { colors } from './src/theme/theme';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
-const navTheme: Theme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.bg,
-    card: colors.bgAlt,
-    primary: colors.primary,
-    text: colors.text,
-    border: colors.border,
-    notification: colors.accent,
-  },
-};
+function Root() {
+  const { colors, isDark } = useTheme();
+  const base = isDark ? DarkTheme : DefaultTheme;
+  const navTheme: Theme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.bg,
+      card: colors.bgAlt,
+      primary: colors.primary,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.accent,
+    },
+  };
+  return (
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <RootNavigator />
+    </NavigationContainer>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <LLMProvider>
-        <NavigationContainer theme={navTheme}>
-          <StatusBar style="light" />
-          <RootNavigator />
-        </NavigationContainer>
-      </LLMProvider>
+      <ThemeProvider>
+        <LLMProvider>
+          <Root />
+        </LLMProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
