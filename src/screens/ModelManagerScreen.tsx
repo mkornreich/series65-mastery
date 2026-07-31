@@ -126,6 +126,13 @@ export default function ModelManagerScreen() {
           {m.description}
         </Body>
         <Text style={[styles.status, { color: statusColor }]}>{statusText}</Text>
+        {geminiOk === false && (
+          <Body muted style={{ marginTop: spacing.xs, fontSize: font.small }}>
+            Your device has AICore, but it hasn’t granted Gemini Nano access to this
+            app (Google gates the on-device model API). Download a model below to use
+            the AI tutor now.
+          </Body>
+        )}
         <View style={styles.actions}>
           {isActive ? (
             <AppButton title="Active ✓" variant="secondary" style={{ flex: 1 }} />

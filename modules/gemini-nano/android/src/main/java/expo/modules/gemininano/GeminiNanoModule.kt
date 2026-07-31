@@ -1,6 +1,7 @@
 package expo.modules.gemininano
 
 import android.content.Context
+import android.util.Log
 import com.google.ai.edge.aicore.GenerativeModel
 import com.google.ai.edge.aicore.generationConfig
 import expo.modules.kotlin.Promise
@@ -50,6 +51,7 @@ class GeminiNanoModule : Module() {
             model.close()
           }
         } catch (e: Throwable) {
+          Log.w("GeminiNano", "isAvailable failed: ${e.javaClass.name}: ${e.message}", e)
           false
         }
         promise.resolve(ok)
