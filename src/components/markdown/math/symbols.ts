@@ -1,0 +1,150 @@
+// LaTeX command -> Unicode glyph. A miss falls back to rendering the literal
+// command text, so an unknown \command never crashes the stream — the reader
+// just sees "\command". Stick to BMP glyphs that render in the default system
+// font (exotic script letters would tofu on Android).
+
+export const SYMBOLS: Record<string, string> = {
+  // binary / relational operators
+  times: '×',
+  div: '÷',
+  cdot: '⋅',
+  ast: '∗',
+  star: '⋆',
+  pm: '±',
+  mp: '∓',
+  leq: '≤',
+  le: '≤',
+  geq: '≥',
+  ge: '≥',
+  neq: '≠',
+  ne: '≠',
+  approx: '≈',
+  sim: '∼',
+  simeq: '≃',
+  cong: '≅',
+  equiv: '≡',
+  propto: '∝',
+  ll: '≪',
+  gg: '≫',
+  // set / logic
+  in: '∈',
+  notin: '∉',
+  subset: '⊂',
+  subseteq: '⊆',
+  supset: '⊃',
+  supseteq: '⊇',
+  cup: '∪',
+  cap: '∩',
+  emptyset: '∅',
+  forall: '∀',
+  exists: '∃',
+  neg: '¬',
+  land: '∧',
+  lor: '∨',
+  // arrows
+  to: '→',
+  rightarrow: '→',
+  Rightarrow: '⇒',
+  leftarrow: '←',
+  Leftarrow: '⇐',
+  leftrightarrow: '↔',
+  Leftrightarrow: '⇔',
+  mapsto: '↦',
+  uparrow: '↑',
+  downarrow: '↓',
+  // big operators
+  sum: '∑',
+  prod: '∏',
+  int: '∫',
+  oint: '∮',
+  // dots / misc
+  infty: '∞',
+  partial: '∂',
+  nabla: '∇',
+  ldots: '…',
+  dots: '…',
+  cdots: '⋯',
+  vdots: '⋮',
+  ddots: '⋱',
+  prime: '′',
+  angle: '∠',
+  perp: '⊥',
+  parallel: '∥',
+  degree: '°',
+  circ: '∘',
+  bullet: '•',
+  times10: '×10',
+  langle: '⟨',
+  rangle: '⟩',
+  // lowercase Greek
+  alpha: 'α',
+  beta: 'β',
+  gamma: 'γ',
+  delta: 'δ',
+  epsilon: 'ε',
+  varepsilon: 'ε',
+  zeta: 'ζ',
+  eta: 'η',
+  theta: 'θ',
+  vartheta: 'ϑ',
+  iota: 'ι',
+  kappa: 'κ',
+  lambda: 'λ',
+  mu: 'μ',
+  nu: 'ν',
+  xi: 'ξ',
+  pi: 'π',
+  rho: 'ρ',
+  sigma: 'σ',
+  tau: 'τ',
+  upsilon: 'υ',
+  phi: 'φ',
+  varphi: 'ϕ',
+  chi: 'χ',
+  psi: 'ψ',
+  omega: 'ω',
+  // uppercase Greek
+  Gamma: 'Γ',
+  Delta: 'Δ',
+  Theta: 'Θ',
+  Lambda: 'Λ',
+  Xi: 'Ξ',
+  Pi: 'Π',
+  Sigma: 'Σ',
+  Phi: 'Φ',
+  Psi: 'Ψ',
+  Omega: 'Ω',
+};
+
+// Explicit spacing commands -> width in "em-ish" units (1 ≈ a normal space).
+export const SPACES: Record<string, number> = {
+  ',': 0.28, // \,
+  ':': 0.36, // \:
+  ';': 0.44, // \;
+  ' ': 0.5, // "\ " (backslash-space)
+  quad: 1.1,
+  qquad: 2.2,
+  '!': -0.2, // \! negative thin space (clamped later)
+};
+
+// Commands that wrap their {arg} as upright text rather than a symbol.
+export const UPRIGHT_WRAPPERS = new Set(['text', 'mathrm', 'mathbf', 'operatorname', 'mathsf', 'textbf', 'textit']);
+
+// Multi-letter function names that should render upright (TeX \sin, \log, …).
+export const FUNCTIONS = new Set([
+  'sin',
+  'cos',
+  'tan',
+  'cot',
+  'sec',
+  'csc',
+  'log',
+  'ln',
+  'exp',
+  'lim',
+  'max',
+  'min',
+  'det',
+  'gcd',
+  'mod',
+]);

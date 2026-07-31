@@ -21,6 +21,7 @@ import ExamResultScreen from '../screens/ExamResultScreen';
 import TutorScreen from '../screens/TutorScreen';
 import ModelManagerScreen from '../screens/ModelManagerScreen';
 import AboutScreen from '../screens/AboutScreen';
+import MarkdownPreviewScreen from '../screens/MarkdownPreviewScreen';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -101,6 +102,13 @@ export default function RootNavigator() {
       <Stack.Screen name="Tutor" component={TutorScreen} options={{ title: 'AI Tutor' }} />
       <Stack.Screen name="ModelManager" component={ModelManagerScreen} options={{ title: 'AI models' }} />
       <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
+      {__DEV__ && (
+        <Stack.Screen
+          name="MarkdownPreview"
+          component={MarkdownPreviewScreen}
+          options={{ title: 'Markdown preview' }}
+        />
+      )}
     </Stack.Navigator>
   );
 }

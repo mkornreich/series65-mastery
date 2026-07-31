@@ -16,6 +16,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useLLM } from '../llm/LLMProvider';
 import { ChatMessage } from '../types';
 import { AppButton } from '../components/ui';
+import { Markdown } from '../components/markdown';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
 
@@ -124,9 +125,13 @@ export default function TutorScreen({ route, navigation }: Props) {
             ]}
           >
             {m.role === 'assistant' && <Text style={styles.aiTag}>TUTOR</Text>}
-            <Text style={m.role === 'user' ? styles.userText : styles.aiText}>
-              {m.content || (sending ? '…' : '')}
-            </Text>
+            {m.role === 'user' ? (
+              <Text style={styles.userText}>{m.content}</Text>
+            ) : m.content ? (
+              <Markdown source={m.content} baseSize={font.body} />
+            ) : (
+              <Text style={styles.aiText}>{sending ? '…' : ''}</Text>
+            )}
           </View>
         ))}
       </ScrollView>

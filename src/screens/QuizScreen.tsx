@@ -5,6 +5,7 @@ import { RootStackParamList, AnswerRecord } from '../navigation/types';
 import { Question } from '../types';
 import { Screen, Card, AppButton, Body } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
+import { Markdown } from '../components/markdown';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
@@ -237,7 +238,7 @@ export default function QuizScreen({ route, navigation }: Props) {
               {(aiLoading || aiText) && (
                 <View style={styles.aiBox}>
                   <Text style={styles.aiLabel}>AI TUTOR</Text>
-                  <Body>{aiText || 'Thinking…'}</Body>
+                  {aiText ? <Markdown source={aiText} baseSize={font.body} /> : <Body>Thinking…</Body>}
                 </View>
               )}
               {aiError && <Text style={styles.aiError}>{aiError}</Text>}

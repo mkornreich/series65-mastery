@@ -45,6 +45,7 @@ export type RootStackParamList = {
   Tutor: { topicTitle?: string; componentId?: string };
   ModelManager: undefined;
   About: undefined;
+  MarkdownPreview: undefined;
 };
 
 export type TabParamList = {

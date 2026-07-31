@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { Screen, Card, Body, Divider } from '../components/ui';
+import { useNavigation } from '@react-navigation/native';
+import { Screen, Card, Body, Divider, AppButton } from '../components/ui';
 import { spacing, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { EXAM_SPEC, SUBJECTS } from '../data/curriculum';
@@ -8,6 +9,7 @@ import { totalBankQuestions } from '../mastery/selection';
 
 export default function AboutScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation<any>();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Screen>
@@ -61,6 +63,20 @@ export default function AboutScreen() {
           exam questions. Not investment advice.
         </Body>
       </Card>
+
+      {__DEV__ && (
+        <Card>
+          <Text style={styles.h3}>Developer</Text>
+          <Body muted style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+            Preview the Markdown + math renderer against a sample gallery.
+          </Body>
+          <AppButton
+            title="Markdown preview"
+            variant="secondary"
+            onPress={() => navigation.navigate('MarkdownPreview')}
+          />
+        </Card>
+      )}
     </Screen>
   );
 }
