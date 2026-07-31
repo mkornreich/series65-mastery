@@ -127,6 +127,10 @@ export interface LLMModelInfo {
   quant: string;
   contextLength: number;
   recommended?: boolean;
+  /** 'gguf' = downloadable llama.cpp model; 'aicore' = system Gemini Nano. */
+  kind?: 'gguf' | 'aicore';
+  /** Built into the device (no download), e.g. Gemini Nano. */
+  builtIn?: boolean;
 }
 
 export interface GenerationParams {

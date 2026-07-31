@@ -1,0 +1,7 @@
+{
+  "name": "gemini-nano",
+  "version": "0.1.0",
+  "description": "On-device Gemini Nano (AICore) access as a local Expo module",
+  "main": "index.ts",
+  "private": true
+}

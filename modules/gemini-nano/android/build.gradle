@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.gemininano'
+version = '0.1.0'
+
+android {
+  namespace 'expo.modules.gemininano'
+  defaultConfig {
+    versionCode 1
+    versionName '0.1.0'
+  }
+}
+
+dependencies {
+  // Google's on-device Gemini Nano access via AICore (experimental).
+  implementation 'com.google.ai.edge.aicore:aicore:0.0.1-exp02'
+}

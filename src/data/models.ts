@@ -9,7 +9,27 @@ import { LLMModelInfo } from '../types';
 //   ~2 GB models  -> phones with >=6-8 GB RAM
 // Quantization Q4_K_M balances size and quality.
 
+// Gemini Nano ships inside the OS on supported devices (recent Pixels) via
+// AICore. There is no file to download — the app talks to the system model.
+export const GEMINI_NANO: LLMModelInfo = {
+  id: 'gemini-nano',
+  name: 'Gemini Nano (built-in)',
+  family: 'Gemini',
+  description:
+    'Google’s on-device model, built into supported Pixel devices through AICore. No download — it runs through the system.',
+  url: '',
+  fileName: '',
+  sizeMB: 0,
+  params: 'system',
+  quant: 'system',
+  contextLength: 4096,
+  kind: 'aicore',
+  builtIn: true,
+  recommended: true,
+};
+
 export const AVAILABLE_MODELS: LLMModelInfo[] = [
+  GEMINI_NANO,
   {
     id: 'llama-3.2-1b-instruct-q4',
     name: 'Llama 3.2 1B Instruct',
