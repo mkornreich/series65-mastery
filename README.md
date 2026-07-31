@@ -52,6 +52,11 @@ pretest), 180 minutes, and a pass mark of 92/130 across four sections weighted
   - **Downloadable GGUF models** via [`llama.rn`](https://github.com/mybigday/llama.rn)
     (llama.cpp): Llama 3.2 1B/3B, Qwen2.5 1.5B, Gemma 2 2B, SmolLM2 1.7B. Tune
     temperature / context size / GPU layers.
+  - **LiteRT-LM `.litertlm` models on the GPU** via `com.google.ai.edge.litertlm`
+    (native local module in `modules/litert-lm`) — the same engine and files as
+    Google’s [AI Edge Gallery](https://github.com/google-ai-edge/gallery): Gemma 4
+    E2B, Qwen2.5 1.5B, DeepSeek-R1 Distill. Also discovers `.litertlm` files already
+    on the device (dropped into the app’s external files dir) and runs them on the GPU.
 
 ### 🎨 Light & dark themes
 - Full light and dark palettes with a **Settings → Appearance** toggle

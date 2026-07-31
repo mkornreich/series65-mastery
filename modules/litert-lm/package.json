@@ -1,0 +1,7 @@
+{
+  "name": "litert-lm",
+  "version": "0.1.0",
+  "description": "On-device LiteRT-LM (.litertlm) inference as a local Expo module",
+  "main": "index.ts",
+  "private": true
+}

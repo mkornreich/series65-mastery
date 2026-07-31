@@ -7,14 +7,16 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  ChatMessage,
-  Component,
-  EngineStatus,
-  Question,
-} from '../types';
+import { ChatMessage, Component, EngineStatus, LLMModelInfo, Question } from '../types';
 import { engine, isLlamaAvailable } from './LlamaEngine';
 import { geminiSupported, geminiAvailable, geminiComplete } from './geminiEngine';
+import {
+  litertSupported,
+  litertLoadModel,
+  litertUnload,
+  litertComplete,
+  litertDir,
+} from './litertEngine';
 import { MODEL_BY_ID } from '../data/models';
 import { isDownloaded, modelPath } from './modelManager';
 import {
@@ -26,14 +28,50 @@ import {
 import { bankByComponent } from '../mastery/selection';
 import { useStore } from '../store/useStore';
 
-type EngineKind = 'gguf' | 'aicore';
+type EngineKind = 'gguf' | 'aicore' | 'litertlm';
+
+const LOCAL_PREFIX = 'local:';
+export function localLitertId(fileName: string): string {
+  return LOCAL_PREFIX + fileName;
+}
+function isLocalId(id: string): boolean {
+  return id.startsWith(LOCAL_PREFIX);
+}
+function localFileName(id: string): string {
+  return id.slice(LOCAL_PREFIX.length);
+}
+
+/** Build a synthetic model-info for an on-device (imported) .litertlm file. */
+export function localLitertModelInfo(fileName: string): LLMModelInfo {
+  return {
+    id: localLitertId(fileName),
+    name: fileName.replace('.litertlm', '').replace(/[-_]+/g, ' '),
+    family: 'LiteRT-LM',
+    description: 'On-device LiteRT-LM model (imported). Runs on the GPU.',
+    url: '',
+    fileName,
+    sizeMB: 0,
+    params: '',
+    quant: '',
+    contextLength: 4096,
+    kind: 'litertlm',
+    backend: 'gpu',
+    local: true,
+  };
+}
+
+function kindOf(id: string | null): EngineKind | null {
+  if (!id) return null;
+  if (isLocalId(id)) return 'litertlm';
+  return (MODEL_BY_ID[id]?.kind as EngineKind) ?? 'gguf';
+}
 
 interface LLMContextValue {
   available: boolean;
   status: EngineStatus;
   activeModelId: string | null;
   activeKind: EngineKind | null;
-  loadProgress: number; // 0..100 (gguf load only)
+  loadProgress: number;
   error: string | null;
   loadedModelId: string | null;
   loadModel: (id: string) => Promise<void>;
@@ -52,13 +90,9 @@ interface LLMContextValue {
 
 const LLMContext = createContext<LLMContextValue | null>(null);
 
-function kindOf(id: string | null): EngineKind | null {
-  if (!id) return null;
-  return (MODEL_BY_ID[id]?.kind as EngineKind) ?? 'gguf';
-}
-
 export function LLMProvider({ children }: { children: React.ReactNode }) {
-  const available = isLlamaAvailable() || geminiSupported();
+  const available =
+    isLlamaAvailable() || geminiSupported() || litertSupported();
   const activeModelId = useStore((s) => s.settings.activeModelId);
   const genParams = useStore((s) => s.settings.genParams);
   const nCtx = useStore((s) => s.settings.nCtx);
@@ -81,6 +115,62 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModelId, available]);
 
+  const loadedRef = useRef<string | null>(null);
+
+  const releaseAll = useCallback(async () => {
+    try {
+      await engine.unload();
+    } catch {
+      /* ignore */
+    }
+    try {
+      await litertUnload();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Core loader: throws on failure; updates loadedRef + state on success.
+  const doLoad = useCallback(
+    async (id: string) => {
+      const model = isLocalId(id) ? localLitertModelInfo(localFileName(id)) : MODEL_BY_ID[id];
+      if (!model) throw new Error('Unknown model.');
+      const kind = kindOf(id);
+      if (kind === 'aicore') {
+        if (!geminiSupported()) throw new Error('Gemini Nano is not in this build.');
+        const ok = await geminiAvailable();
+        if (!ok) throw new Error('Gemini Nano isn’t available on this device.');
+        await releaseAll();
+      } else if (kind === 'litertlm') {
+        if (!litertSupported()) throw new Error('LiteRT-LM is not in this build.');
+        let path: string;
+        if (model.local) {
+          const dir = litertDir();
+          if (!dir) throw new Error('LiteRT-LM models directory is unavailable.');
+          path = `${dir}/${model.fileName}`;
+        } else {
+          if (!(await isDownloaded(model))) throw new Error('Model is not downloaded yet.');
+          path = modelPath(model);
+        }
+        await releaseAll();
+        const wantGpu = model.backend !== 'cpu';
+        try {
+          await litertLoadModel(path, wantGpu, Math.max(1024, nCtx));
+        } catch (e) {
+          if (wantGpu) await litertLoadModel(path, false, Math.max(1024, nCtx));
+          else throw e;
+        }
+      } else {
+        if (!(await isDownloaded(model))) throw new Error('Model is not downloaded yet.');
+        await litertUnload().catch(() => {});
+        await engine.load(modelPath(model), (p) => setLoadProgress(p), { nCtx, nGpuLayers });
+      }
+      loadedRef.current = id;
+      setLoadedModelId(id);
+    },
+    [nCtx, nGpuLayers, releaseAll]
+  );
+
   const loadModel = useCallback(
     async (id: string) => {
       if (!available) {
@@ -88,29 +178,14 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
         setStatus('unavailable');
         return;
       }
-      const model = MODEL_BY_ID[id];
-      if (!model) throw new Error('Unknown model.');
       if (busy.current) return;
       busy.current = true;
       setError(null);
       setStatus('loading');
       setLoadProgress(0);
       try {
-        if ((model.kind ?? 'gguf') === 'aicore') {
-          if (!geminiSupported()) throw new Error('Gemini Nano is not in this build.');
-          const ok = await geminiAvailable();
-          if (!ok)
-            throw new Error(
-              'Gemini Nano isn’t available on this device (needs AICore / a supported Pixel).'
-            );
-          setLoadedModelId(id);
-          setStatus('ready');
-        } else {
-          if (!(await isDownloaded(model))) throw new Error('Model is not downloaded yet.');
-          await engine.load(modelPath(model), (p) => setLoadProgress(p), { nCtx, nGpuLayers });
-          setLoadedModelId(id);
-          setStatus('ready');
-        }
+        await doLoad(id);
+        setStatus('ready');
       } catch (e: any) {
         setError(e?.message ?? String(e));
         setStatus('error');
@@ -118,24 +193,29 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
         busy.current = false;
       }
     },
-    [available, nCtx, nGpuLayers]
+    [available, doLoad]
   );
 
   const unload = useCallback(async () => {
-    await engine.unload();
+    await releaseAll();
+    loadedRef.current = null;
     setLoadedModelId(null);
     setStatus(available ? (activeModelId ? 'idle' : 'no-model') : 'unavailable');
-  }, [available, activeModelId]);
+  }, [available, activeModelId, releaseAll]);
 
   useEffect(() => {
     (async () => {
       if (!autoLoadModel || !available || !activeModelId) return;
-      const model = MODEL_BY_ID[activeModelId];
-      if (!model) return;
-      if ((model.kind ?? 'gguf') === 'aicore') {
+      const kind = kindOf(activeModelId);
+      if (kind === 'aicore') {
         loadModel(activeModelId).catch(() => {});
-      } else if (!engine.isLoaded && (await isDownloaded(model))) {
-        loadModel(activeModelId).catch(() => {});
+      } else {
+        const model = isLocalId(activeModelId)
+          ? localLitertModelInfo(localFileName(activeModelId))
+          : MODEL_BY_ID[activeModelId];
+        if (model && (model.local || (await isDownloaded(model)))) {
+          loadModel(activeModelId).catch(() => {});
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,19 +225,20 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     if (!available)
       throw new Error('On-device AI is unavailable in this build. Create a development build.');
     if (!activeModelId) throw new Error('No model selected. Choose one in Settings.');
-    const kind = kindOf(activeModelId);
-    if (kind === 'aicore') {
-      if (loadedModelId === activeModelId) return;
-      if (!geminiSupported()) throw new Error('Gemini Nano is not in this build.');
-      const ok = await geminiAvailable();
-      if (!ok) throw new Error('Gemini Nano isn’t available on this device.');
-      setLoadedModelId(activeModelId);
-      return;
+    if (loadedRef.current === activeModelId) return;
+    if (busy.current) throw new Error('A model is already loading. Try again in a moment.');
+    busy.current = true;
+    setStatus('loading');
+    try {
+      await doLoad(activeModelId);
+      setStatus('ready');
+    } catch (e) {
+      setStatus('error');
+      throw e;
+    } finally {
+      busy.current = false;
     }
-    if (engine.isLoaded) return;
-    await loadModel(activeModelId);
-    if (!engine.isLoaded) throw new Error(error || 'Model failed to load.');
-  }, [available, activeModelId, loadedModelId, loadModel, error]);
+  }, [available, activeModelId, doLoad]);
 
   const runText = useCallback(
     async (messages: ChatMessage[], onToken?: (t: string) => void) => {
@@ -165,8 +246,12 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       setStatus('generating');
       try {
         let out: string;
-        if (kindOf(activeModelId) === 'aicore') {
+        const kind = kindOf(activeModelId);
+        if (kind === 'aicore') {
           out = await geminiComplete(messages, genParams.temperature, genParams.maxTokens);
+          if (onToken && out) onToken(out);
+        } else if (kind === 'litertlm') {
+          out = await litertComplete(messages, genParams.temperature, genParams.topP);
           if (onToken && out) onToken(out);
         } else {
           out = await engine.complete(messages, genParams, onToken);
@@ -205,9 +290,12 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
         const examples = bankByComponent(component.id);
         const messages = buildGenerateMessages(component, count, examples);
         const maxTokens = Math.max(768, count * 240);
+        const kind = kindOf(activeModelId);
         let text: string;
-        if (kindOf(activeModelId) === 'aicore') {
+        if (kind === 'aicore') {
           text = await geminiComplete(messages, genParams.temperature, maxTokens);
+        } else if (kind === 'litertlm') {
+          text = await litertComplete(messages, genParams.temperature, genParams.topP);
         } else {
           text = await engine.completeJson(messages, { ...genParams, maxTokens });
         }

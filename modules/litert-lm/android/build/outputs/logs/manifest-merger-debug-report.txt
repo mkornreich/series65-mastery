@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml:2:13-83
+INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml:2:13-83
+	package
+		INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml
+	xmlns:android
+		ADDED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml:2:23-81
+uses-sdk
+INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml reason: use-sdk injection requested
+INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml
+INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml
+	android:targetSdkVersion
+		INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml
+	android:minSdkVersion
+		INJECTED from /home/mk/things/series65/.claude/worktrees/series-65-react-native-app-269826/series65-mastery/modules/litert-lm/android/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7336651019327477051.xml

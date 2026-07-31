@@ -28,8 +28,64 @@ export const GEMINI_NANO: LLMModelInfo = {
   recommended: true,
 };
 
+// LiteRT-LM (.litertlm) models — the exact files used by Google's AI Edge
+// Gallery, run through the LiteRT-LM engine on the GPU. Downloaded from the
+// litert-community org (ungated).
+const LITERTLM_MODELS: LLMModelInfo[] = [
+  {
+    id: 'litertlm-gemma-4-e2b',
+    name: 'Gemma 4 E2B (LiteRT-LM)',
+    family: 'Gemma',
+    description:
+      'Google’s Gemma 4 (E2B) — the AI Edge Gallery’s flagship, run on the GPU via LiteRT-LM. Best on phones with 8 GB+ RAM.',
+    url: 'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm',
+    fileName: 'gemma-4-E2B-it.litertlm',
+    sizeMB: 2588,
+    params: '2B (eff.)',
+    quant: 'int4',
+    contextLength: 4096,
+    kind: 'litertlm',
+    backend: 'gpu',
+    minRamGb: 8,
+    recommended: true,
+  },
+  {
+    id: 'litertlm-qwen2.5-1.5b',
+    name: 'Qwen2.5 1.5B (LiteRT-LM)',
+    family: 'Qwen',
+    description:
+      'Qwen2.5 1.5B in the AI Edge Gallery’s LiteRT-LM format, GPU-accelerated. A strong all-round tutor.',
+    url: 'https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.litertlm',
+    fileName: 'Qwen2.5-1.5B-Instruct_q8_ekv4096.litertlm',
+    sizeMB: 1598,
+    params: '1.5B',
+    quant: 'q8',
+    contextLength: 4096,
+    kind: 'litertlm',
+    backend: 'gpu',
+    minRamGb: 6,
+  },
+  {
+    id: 'litertlm-deepseek-r1-1.5b',
+    name: 'DeepSeek-R1 Distill Qwen 1.5B (LiteRT-LM)',
+    family: 'DeepSeek',
+    description:
+      'The AI Edge Gallery’s DeepSeek-R1 distill in LiteRT-LM format, GPU-accelerated. Good at step-by-step reasoning.',
+    url: 'https://huggingface.co/litert-community/DeepSeek-R1-Distill-Qwen-1.5B/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B_multi-prefill-seq_q8_ekv4096.litertlm',
+    fileName: 'DeepSeek-R1-Distill-Qwen-1.5B_q8_ekv4096.litertlm',
+    sizeMB: 1833,
+    params: '1.5B',
+    quant: 'q8',
+    contextLength: 4096,
+    kind: 'litertlm',
+    backend: 'gpu',
+    minRamGb: 6,
+  },
+];
+
 export const AVAILABLE_MODELS: LLMModelInfo[] = [
   GEMINI_NANO,
+  ...LITERTLM_MODELS,
   {
     id: 'gemma-3-1b-it-q4',
     name: 'Gemma 3 1B Instruct',

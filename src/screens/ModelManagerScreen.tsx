@@ -11,8 +11,9 @@ import {
   DownloadController,
 } from '../llm/modelManager';
 import { geminiSupported, geminiAvailable } from '../llm/geminiEngine';
+import { localLitertModels } from '../llm/litertEngine';
 import { useStore } from '../store/useStore';
-import { useLLM } from '../llm/LLMProvider';
+import { useLLM, localLitertModelInfo } from '../llm/LLMProvider';
 import { LLMModelInfo } from '../types';
 
 interface ModelState {
@@ -30,6 +31,7 @@ export default function ModelManagerScreen() {
 
   const [states, setStates] = useState<Record<string, ModelState>>({});
   const [geminiOk, setGeminiOk] = useState<boolean | null>(null);
+  const [localModels, setLocalModels] = useState<string[]>([]);
   const controllers = useRef<Record<string, DownloadController>>({});
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function ModelManagerScreen() {
     (async () => {
       setGeminiOk(geminiSupported() ? await geminiAvailable() : false);
     })();
+    setLocalModels(localLitertModels());
   }, []);
 
   const patch = (id: string, p: Partial<ModelState>) =>
@@ -225,6 +228,47 @@ export default function ModelManagerScreen() {
     );
   };
 
+  const renderLocalLitert = (fileName: string) => {
+    const m = localLitertModelInfo(fileName);
+    const isActive = activeModelId === m.id;
+    return (
+      <Card key={m.id} accent={isActive ? colors.accent : colors.success}>
+        <View style={styles.head}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{m.name}</Text>
+            <Text style={styles.meta}>On-device · LiteRT-LM · GPU</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Pill label="ON DEVICE" color={colors.success} bg={`${colors.success}22`} />
+            {isActive && (
+              <View style={{ marginTop: 4 }}>
+                <Pill label="ACTIVE" color={colors.success} bg={`${colors.success}22`} />
+              </View>
+            )}
+          </View>
+        </View>
+        <Body muted style={{ marginTop: spacing.sm, fontSize: font.small }}>
+          Imported LiteRT-LM model, run on the GPU (same engine as Google’s AI Edge Gallery).
+        </Body>
+        <View style={styles.actions}>
+          {isActive && llm.status === 'ready' ? (
+            <AppButton title="Loaded ✓" variant="secondary" style={{ flex: 1 }} />
+          ) : isActive ? (
+            <AppButton
+              title="Load on GPU"
+              variant="primary"
+              loading={llm.status === 'loading'}
+              onPress={() => llm.loadModel(m.id)}
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <AppButton title="Set active" variant="primary" onPress={() => activate(m)} style={{ flex: 1 }} />
+          )}
+        </View>
+      </Card>
+    );
+  };
+
   return (
     <Screen>
       <Text style={styles.h1}>AI models</Text>
@@ -250,12 +294,13 @@ export default function ModelManagerScreen() {
         const toDownload = AVAILABLE_MODELS.filter(
           (m) => !m.builtIn && !states[m.id]?.downloaded
         );
-        const onDevice = [...builtIns, ...downloaded];
         return (
           <>
             <SectionHeader title="On this device" />
-            {onDevice.map((m) => (m.builtIn ? renderBuiltIn(m) : renderGguf(m)))}
-            {downloaded.length === 0 && (
+            {builtIns.map((m) => renderBuiltIn(m))}
+            {localModels.map((f) => renderLocalLitert(f))}
+            {downloaded.map((m) => renderGguf(m))}
+            {downloaded.length === 0 && localModels.length === 0 && (
               <Body muted style={{ fontSize: font.small, marginBottom: spacing.md }}>
                 {geminiOk
                   ? 'Gemini Nano is ready. Download a model below to add another on-device option.'

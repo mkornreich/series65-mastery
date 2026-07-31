@@ -127,10 +127,18 @@ export interface LLMModelInfo {
   quant: string;
   contextLength: number;
   recommended?: boolean;
-  /** 'gguf' = downloadable llama.cpp model; 'aicore' = system Gemini Nano. */
-  kind?: 'gguf' | 'aicore';
+  /** 'gguf' = llama.cpp model; 'aicore' = system Gemini Nano; 'litertlm' = LiteRT-LM. */
+  kind?: 'gguf' | 'aicore' | 'litertlm';
   /** Built into the device (no download), e.g. Gemini Nano. */
   builtIn?: boolean;
+  /** Preferred accelerator for LiteRT-LM models. */
+  backend?: 'gpu' | 'cpu';
+  /** Minimum device RAM (GB) the model realistically needs. */
+  minRamGb?: number;
+  /** Already present on the device (imported / from another app). */
+  local?: boolean;
+  /** True if the download source requires Hugging Face auth (gated). */
+  gated?: boolean;
 }
 
 export interface GenerationParams {
