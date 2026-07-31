@@ -3,6 +3,7 @@ package expo.modules.litertlm
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
+import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -41,6 +42,45 @@ class LitertLmModule : Module() {
     loadedPath = null
   }
 
+  // LiteRT-LM writes GPU/XNNPACK compile caches next to the model file. A stale
+  // cache (e.g. after a reinstall) can make engine creation fail with an internal
+  // error; delete them so the next attempt recompiles from scratch.
+  private fun clearCaches(modelPath: String) {
+    try {
+      val f = File(modelPath)
+      val dir = f.parentFile ?: return
+      val base = f.name
+      dir.listFiles()?.forEach { c ->
+        if (
+          c.name != base &&
+          c.name.startsWith(base) &&
+          (c.name.contains("cache") || c.name.contains("mldrift") || c.name.endsWith(".bin"))
+        ) {
+          c.delete()
+        }
+      }
+    } catch (_: Throwable) {}
+  }
+
+  private fun createEngine(modelPath: String, useGpu: Boolean, maxTokens: Int): Engine {
+    val backend: Backend = if (useGpu) Backend.GPU() else Backend.CPU()
+    val e = Engine(
+      EngineConfig(modelPath = modelPath, backend = backend, maxNumTokens = maxTokens)
+    )
+    e.initialize()
+    return e
+  }
+
+  private fun loadWithRetry(modelPath: String, useGpu: Boolean, maxTokens: Int): Engine {
+    return try {
+      createEngine(modelPath, useGpu, maxTokens)
+    } catch (e1: Throwable) {
+      Log.w("LitertLm", "load attempt failed (gpu=$useGpu); clearing caches and recompiling: ${e1.message}")
+      clearCaches(modelPath)
+      createEngine(modelPath, useGpu, maxTokens)
+    }
+  }
+
   override fun definition() = ModuleDefinition {
     Name("LitertLm")
 
@@ -61,15 +101,7 @@ class LitertLmModule : Module() {
       scope.launch {
         try {
           releaseEngine()
-          val backend: Backend = if (useGpu) Backend.GPU() else Backend.CPU()
-          val config = EngineConfig(
-            modelPath = modelPath,
-            backend = backend,
-            maxNumTokens = maxTokens,
-          )
-          val e = Engine(config)
-          e.initialize()
-          engine = e
+          engine = loadWithRetry(modelPath, useGpu, maxTokens)
           loadedPath = modelPath
           promise.resolve(true)
         } catch (t: Throwable) {
@@ -80,17 +112,18 @@ class LitertLmModule : Module() {
       }
     }
 
-    AsyncFunction("generate") { prompt: String, temperature: Double, topK: Int, topP: Double, promise: Promise ->
+    AsyncFunction("generate") { prompt: String, system: String, temperature: Double, topK: Int, topP: Double, promise: Promise ->
       scope.launch {
         try {
           val e = engine ?: throw IllegalStateException("No LiteRT-LM model is loaded.")
           val conversation = e.createConversation(
             ConversationConfig(
+              systemInstruction = if (system.isNotBlank()) Contents.of(system) else null,
               samplerConfig = SamplerConfig(
                 topK = topK,
                 topP = topP,
                 temperature = temperature,
-              )
+              ),
             )
           )
           val text = try {

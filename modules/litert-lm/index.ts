@@ -5,7 +5,13 @@ interface LitertLmNative {
   modelsDir(): string;
   listLocalModels(): string[];
   load(modelPath: string, useGpu: boolean, maxTokens: number): Promise<boolean>;
-  generate(prompt: string, temperature: number, topK: number, topP: number): Promise<string>;
+  generate(
+    prompt: string,
+    system: string,
+    temperature: number,
+    topK: number,
+    topP: number
+  ): Promise<string>;
   release(): Promise<void>;
 }
 
@@ -54,12 +60,13 @@ export async function litertLoad(
 
 export async function litertGenerate(
   prompt: string,
+  system: string,
   temperature: number,
   topK: number,
   topP: number
 ): Promise<string> {
   if (!native) throw new Error('LiteRT-LM is not available in this build.');
-  return native.generate(prompt, temperature, topK, topP);
+  return native.generate(prompt, system, temperature, topK, topP);
 }
 
 export async function litertRelease(): Promise<void> {

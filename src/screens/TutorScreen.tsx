@@ -19,15 +19,26 @@ import { AppButton } from '../components/ui';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
 
-const SUGGESTIONS = [
-  'Explain this topic simply.',
-  'Give me a memory trick.',
-  'What’s a common exam trap here?',
-  'Quiz me with one hard question.',
-];
+function suggestionsFor(topic?: string): string[] {
+  if (topic) {
+    return [
+      `Explain ${topic} simply.`,
+      `Give me a memory trick for ${topic}.`,
+      `What’s a common Series 65 exam trap in ${topic}?`,
+      `Quiz me with one hard question on ${topic}.`,
+    ];
+  }
+  return [
+    'Explain a Series 65 concept simply.',
+    'Give me a memory trick for the exam.',
+    'What’s a common Series 65 exam trap?',
+    'Quiz me with one hard Series 65 question.',
+  ];
+}
 
 export default function TutorScreen({ route, navigation }: Props) {
   const { topicTitle } = route.params ?? {};
+  const SUGGESTIONS = suggestionsFor(topicTitle);
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const llm = useLLM();

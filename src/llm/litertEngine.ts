@@ -7,7 +7,6 @@ import {
   litertGenerate,
   litertRelease,
 } from '../../modules/litert-lm';
-import { messagesToPrompt } from './geminiEngine';
 
 export function litertSupported(): boolean {
   return isLitertSupported();
@@ -38,7 +37,19 @@ export async function litertComplete(
   temperature: number,
   topP: number
 ): Promise<string> {
-  const prompt = messagesToPrompt(messages);
-  const text = await litertGenerate(prompt, temperature, 40, topP);
+  // LiteRT-LM applies the model's own chat template, so pass the system prompt
+  // as a proper systemInstruction and the user turn(s) as the message.
+  const system = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => m.content)
+    .join('\n\n');
+  const convo = messages.filter((m) => m.role !== 'system');
+  const userPrompt =
+    convo.length <= 1
+      ? convo[0]?.content ?? ''
+      : convo
+          .map((m) => (m.role === 'user' ? 'User: ' : 'Assistant: ') + m.content)
+          .join('\n');
+  const text = await litertGenerate(userPrompt, system, temperature, 40, topP);
   return text.trim();
 }
