@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import { Screen, Card, AppButton, Body, Pill } from '../components/ui';
+import { Screen, Card, AppButton, Body, Pill, SectionHeader } from '../components/ui';
 import { spacing, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { AVAILABLE_MODELS, humanSize } from '../data/models';
@@ -242,7 +242,36 @@ export default function ModelManagerScreen() {
         </Card>
       )}
 
-      {AVAILABLE_MODELS.map((m) => (m.builtIn ? renderBuiltIn(m) : renderGguf(m)))}
+      {(() => {
+        const builtIns = AVAILABLE_MODELS.filter((m) => m.builtIn);
+        const downloaded = AVAILABLE_MODELS.filter(
+          (m) => !m.builtIn && states[m.id]?.downloaded
+        );
+        const toDownload = AVAILABLE_MODELS.filter(
+          (m) => !m.builtIn && !states[m.id]?.downloaded
+        );
+        const onDevice = [...builtIns, ...downloaded];
+        return (
+          <>
+            <SectionHeader title="On this device" />
+            {onDevice.map((m) => (m.builtIn ? renderBuiltIn(m) : renderGguf(m)))}
+            {downloaded.length === 0 && (
+              <Body muted style={{ fontSize: font.small, marginBottom: spacing.md }}>
+                {geminiOk
+                  ? 'Gemini Nano is ready. Download a model below to add another on-device option.'
+                  : 'No downloaded models yet. Add one below to use the AI tutor.'}
+              </Body>
+            )}
+
+            {toDownload.length > 0 && (
+              <>
+                <SectionHeader title="Download to add" />
+                {toDownload.map((m) => renderGguf(m))}
+              </>
+            )}
+          </>
+        );
+      })()}
 
       <Body muted style={{ marginTop: spacing.md, fontSize: font.small }}>
         Gemini Nano runs through your device’s system AI (AICore) on supported Pixel
