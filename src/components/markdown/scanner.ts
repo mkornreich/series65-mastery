@@ -69,8 +69,11 @@ export function tryOpenInlineMath(src: string, openIdx: number): number {
     }
     if (close < 0) return -1;
     const body = src.slice(openIdx + 1, close);
-    if (BARE_NUMBER.test(body) || !hasMathSignal(body)) return -1;
-    return close;
+    // A fully-delimited bare number ("$1.0$", "$0$") is math — models routinely
+    // wrap plain numbers in $...$; real currency is written "$100" with no closing
+    // "$". A LaTeX signal char also means math. Otherwise "$50 a year …" is currency.
+    if (BARE_NUMBER.test(body) || hasMathSignal(body)) return close;
+    return -1;
   }
   const close = findInlineMathClose(src, openIdx);
   if (close < 0) return -1;

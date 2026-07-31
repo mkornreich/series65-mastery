@@ -133,6 +133,19 @@ check('im-01 → exactly 2 math spans', countMathSpans(parseDocument(byId('im-01
   check('operator: asterisks preserved as text', plainText(doc.children).includes('*'));
 }
 
+// A fully-delimited bare number is math (models write $1.0$, $0$); currency ("$50",
+// "$1,000" with no closing $) stays literal.
+{
+  const doc = parseDocument('A beta of $1.0$ or $0$ is common.');
+  check('bare $1.0$/$0$ → 2 math spans', countMathSpans(doc.children) === 2, `got ${countMathSpans(doc.children)}`);
+  check('bare $1.0$ → no stray $ in prose', !plainText(doc.children).includes('$'), `text="${plainText(doc.children)}"`);
+}
+{
+  const doc = parseDocument('The bond costs $1,000 and pays $50 yearly.');
+  check('currency $1,000/$50 → 0 math spans', countMathSpans(doc.children) === 0, `got ${countMathSpans(doc.children)}`);
+  check('currency → dollar amounts stay literal', plainText(doc.children).includes('$1,000') && plainText(doc.children).includes('$50'));
+}
+
 // Regression (finding #2): a bare "$$" in prose does not swallow the paragraph.
 {
   const doc = parseDocument('Companies with $$ to invest tend to win.');
