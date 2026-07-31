@@ -7,6 +7,9 @@ import { parseDocument } from '../blockParser';
 import { parseInline } from '../inlineParser';
 import { BlockNode, SpanNode, MarkdownDoc } from '../ast';
 import type { MathExpr } from '../math/mathAst';
+import { mathToUnicode } from '../math/inlineMath';
+
+const mathToUnicodeSafe = (mb: any): string => (mb ? mathToUnicode(mb.math.root) : '');
 
 let pass = 0;
 let fail = 0;
@@ -260,6 +263,14 @@ check('mix-02 → math inside table cells', countMathSpans(parseDocument(byId('m
   check('dm-04 → mathBlock present', !!mb);
   check('dm-04 → contains \\sqrt', !!mb && mathHasType(mb.math.root, 'sqrt'));
   check('dm-04 → contains \\frac (inside sqrt)', !!mb && mathHasType(mb.math.root, 'frac'));
+}
+
+// Accent: \bar{R} parses to an accent node (was rendering literal "\barR").
+{
+  const mb = findBlock(parseDocument('$$\\bar{R} = 0.1125$$'), 'mathBlock') as any;
+  check('accent → \\bar{R} is an accent node', !!mb && mathHasType(mb.math.root, 'accent'));
+  const pt = mathToUnicodeSafe(mb);
+  check('accent → inline \\bar{R} renders R with a combining mark', pt.includes('R̄'), `got "${pt}"`);
 }
 
 // dm-01 CAPM: display block with a fence (parentheses) and scripts (subscripts).

@@ -159,6 +159,31 @@ function Fence({ node, ctx }: { node: MathExpr & { t: 'fence' }; ctx: MCtx }) {
   );
 }
 
+const ACCENT_GLYPH: Record<string, string> = { hat: '^', tilde: '~', vec: '→', dot: '·', ddot: '··' };
+
+function Accent({ node, ctx }: { node: MathExpr & { t: 'accent' }; ctx: MCtx }) {
+  const base = <Row nodes={node.base} ctx={ctx} />;
+  if (node.kind === 'bar') {
+    return (
+      <View style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+        <View style={{ height: Math.max(StyleSheet.hairlineWidth, 1), backgroundColor: ctx.color, marginBottom: 1 }} />
+        {base}
+      </View>
+    );
+  }
+  return (
+    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+      <Text
+        allowFontScaling={false}
+        style={{ fontSize: ctx.size * 0.7, color: ctx.color, includeFontPadding: false, marginBottom: -ctx.size * 0.16, lineHeight: ctx.size * 0.7 }}
+      >
+        {ACCENT_GLYPH[node.kind] ?? ''}
+      </Text>
+      {base}
+    </View>
+  );
+}
+
 function Atom({ node, ctx }: { node: MathExpr; ctx: MCtx }) {
   switch (node.t) {
     case 'text':
@@ -176,6 +201,8 @@ function Atom({ node, ctx }: { node: MathExpr; ctx: MCtx }) {
       return <Sqrt node={node} ctx={ctx} />;
     case 'fence':
       return <Fence node={node} ctx={ctx} />;
+    case 'accent':
+      return <Accent node={node} ctx={ctx} />;
     default:
       return null;
   }

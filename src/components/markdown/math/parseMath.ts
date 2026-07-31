@@ -2,9 +2,22 @@
 // Total function: never throws, treats end-of-input as an implicit closer for
 // every open construct, so a half-streamed formula still yields a usable tree.
 
-import type { MathExpr } from './mathAst';
+import type { MathExpr, AccentKind } from './mathAst';
 import type { MathNode } from '../ast';
 import { SYMBOLS, SPACES, UPRIGHT_WRAPPERS, FUNCTIONS } from './symbols';
+
+// LaTeX accent commands -> accent kind rendered over the base.
+const ACCENTS: Record<string, AccentKind> = {
+  bar: 'bar',
+  overline: 'bar',
+  hat: 'hat',
+  widehat: 'hat',
+  vec: 'vec',
+  tilde: 'tilde',
+  widetilde: 'tilde',
+  dot: 'dot',
+  ddot: 'ddot',
+};
 
 interface Cur {
   s: string;
@@ -245,6 +258,10 @@ function applyCommand(cur: Cur, name: string, depth: number): MathExpr | null {
   if (UPRIGHT_WRAPPERS.has(name)) {
     const raw = readRawGroup(cur);
     return { t: 'text', s: raw, upright: true };
+  }
+  const accent = ACCENTS[name];
+  if (accent) {
+    return { t: 'accent', kind: accent, base: readGroup(cur, depth) };
   }
   if (name === 'left') {
     const left = readDelim(cur);

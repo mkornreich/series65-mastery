@@ -52,6 +52,21 @@ function delimGlyph(d: string): string {
   return d;
 }
 
+// Combining diacritics so an inline accent stays a single text run (x̄, x̂, …).
+const ACCENT_COMBINING: Record<string, string> = {
+  bar: '̄', // combining macron
+  hat: '̂', // combining circumflex
+  vec: '⃗', // combining right arrow above
+  tilde: '̃', // combining tilde
+  dot: '̇', // combining dot above
+  ddot: '̈', // combining diaeresis
+};
+
+function applyCombining(s: string, mark: string): string {
+  // Attach the mark to each base character so a multi-char base is fully covered.
+  return [...s].map((ch) => (/\s/.test(ch) ? ch : ch + mark)).join('');
+}
+
 function row(nodes: MathExpr[]): string {
   return nodes.map(atom).join('');
 }
@@ -82,6 +97,8 @@ function atom(n: MathExpr): string {
     }
     case 'fence':
       return `${delimGlyph(n.left)}${row(n.kids)}${n.open ? '' : delimGlyph(n.right)}`;
+    case 'accent':
+      return applyCombining(row(n.base), ACCENT_COMBINING[n.kind] ?? '');
     case 'script': {
       let out = row(n.base);
       if (n.sup) out += supOf(row(n.sup));

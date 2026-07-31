@@ -14,6 +14,7 @@ export type MathExpr =
   | MathScript // base with a superscript and/or subscript (x^2, r_f, S_t^{max})
   | MathSqrt // \sqrt{…} or \sqrt[n]{…}
   | MathFence // \left( … \right) with auto-sized delimiters
+  | MathAccent // \bar, \hat, \vec, \tilde, \dot, \overline over a base
   | MathSpace; // an explicit spacer (\,  \;  \quad)
 
 export interface MathText {
@@ -54,6 +55,12 @@ export interface MathFence {
   /** true while the matching \right has not been seen yet. */
   open: boolean;
 }
+export type AccentKind = 'bar' | 'hat' | 'vec' | 'tilde' | 'dot' | 'ddot';
+export interface MathAccent {
+  t: 'accent';
+  kind: AccentKind;
+  base: MathExpr[];
+}
 export interface MathSpace {
   t: 'space';
   /** width in em-ish units (1 ≈ one space) */
@@ -69,6 +76,7 @@ export function hasBlockAtom(nodes: MathExpr[]): boolean {
       n.t === 'fence' ||
       (n.t === 'group' && hasBlockAtom(n.kids)) ||
       (n.t === 'script' &&
-        (hasBlockAtom(n.sup ?? []) || hasBlockAtom(n.sub ?? []) || hasBlockAtom(n.base)))
+        (hasBlockAtom(n.sup ?? []) || hasBlockAtom(n.sub ?? []) || hasBlockAtom(n.base))) ||
+      (n.t === 'accent' && hasBlockAtom(n.base))
   );
 }
