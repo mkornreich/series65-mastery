@@ -1,0 +1,101 @@
+import React from 'react';
+import { Text } from 'react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { RootStackParamList, TabParamList } from './types';
+import { colors, font } from '../theme/theme';
+
+import DashboardScreen from '../screens/DashboardScreen';
+import LearnScreen from '../screens/LearnScreen';
+import ExamIntroScreen from '../screens/ExamIntroScreen';
+import ReviewScreen from '../screens/ReviewScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import SubjectScreen from '../screens/SubjectScreen';
+import TopicScreen from '../screens/TopicScreen';
+import QuizScreen from '../screens/QuizScreen';
+import QuizResultScreen from '../screens/QuizResultScreen';
+import ExamScreen from '../screens/ExamScreen';
+import ExamResultScreen from '../screens/ExamResultScreen';
+import TutorScreen from '../screens/TutorScreen';
+import ModelManagerScreen from '../screens/ModelManagerScreen';
+import AboutScreen from '../screens/AboutScreen';
+
+const Tab = createBottomTabNavigator<TabParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const TAB_ICONS: Record<keyof TabParamList, string> = {
+  Home: '◉',
+  Learn: '▤',
+  ExamTab: '▶',
+  Review: '🔁',
+  Settings: '⚙',
+};
+
+function icon(name: keyof TabParamList) {
+  return ({ color }: { color: string }) => (
+    <Text style={{ fontSize: 18, color }}>{TAB_ICONS[name]}</Text>
+  );
+}
+
+function Tabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.bgAlt,
+          borderTopColor: colors.border,
+          height: 62,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textFaint,
+        tabBarLabelStyle: { fontSize: font.tiny, fontWeight: '700' },
+      }}
+    >
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarIcon: icon('Home') }} />
+      <Tab.Screen name="Learn" component={LearnScreen} options={{ tabBarIcon: icon('Learn') }} />
+      <Tab.Screen
+        name="ExamTab"
+        component={ExamIntroScreen}
+        options={{ tabBarIcon: icon('ExamTab'), title: 'Exam' }}
+      />
+      <Tab.Screen name="Review" component={ReviewScreen} options={{ tabBarIcon: icon('Review') }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarIcon: icon('Settings') }} />
+    </Tab.Navigator>
+  );
+}
+
+export default function RootNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.bgAlt },
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontWeight: '800' },
+        contentStyle: { backgroundColor: colors.bg },
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
+      <Stack.Screen name="Subject" component={SubjectScreen} />
+      <Stack.Screen name="Topic" component={TopicScreen} />
+      <Stack.Screen
+        name="Quiz"
+        component={QuizScreen}
+        options={({ route }) => ({ title: route.params.config.title })}
+      />
+      <Stack.Screen name="QuizResult" component={QuizResultScreen} options={{ title: 'Results', headerBackVisible: false }} />
+      <Stack.Screen name="Exam" component={ExamScreen} options={{ title: 'Exam', gestureEnabled: false }} />
+      <Stack.Screen
+        name="ExamResult"
+        component={ExamResultScreen}
+        options={{ title: 'Exam results', headerBackVisible: false }}
+      />
+      <Stack.Screen name="Tutor" component={TutorScreen} options={{ title: 'AI Tutor' }} />
+      <Stack.Screen name="ModelManager" component={ModelManagerScreen} options={{ title: 'AI models' }} />
+      <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
+    </Stack.Navigator>
+  );
+}
