@@ -31,6 +31,33 @@ export const GEMINI_NANO: LLMModelInfo = {
 export const AVAILABLE_MODELS: LLMModelInfo[] = [
   GEMINI_NANO,
   {
+    id: 'gemma-3-1b-it-q4',
+    name: 'Gemma 3 1B Instruct',
+    family: 'Gemma',
+    description:
+      'Google’s Gemma 3 1B — the same model featured in Google’s AI Edge Gallery. Small and fast; great for tutoring and explanations.',
+    url: 'https://huggingface.co/ggml-org/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q4_K_M.gguf',
+    fileName: 'gemma-3-1b-it-Q4_K_M.gguf',
+    sizeMB: 806,
+    params: '1B',
+    quant: 'Q4_K_M',
+    contextLength: 4096,
+    recommended: true,
+  },
+  {
+    id: 'deepseek-r1-distill-qwen-1.5b-q4',
+    name: 'DeepSeek-R1 Distill Qwen 1.5B',
+    family: 'DeepSeek',
+    description:
+      'A reasoning-distilled 1.5B model, also offered in Google’s AI Edge Gallery. Strong at step-by-step explanations.',
+    url: 'https://huggingface.co/bartowski/DeepSeek-R1-Distill-Qwen-1.5B-GGUF/resolve/main/DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf',
+    fileName: 'DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf',
+    sizeMB: 1117,
+    params: '1.5B',
+    quant: 'Q4_K_M',
+    contextLength: 4096,
+  },
+  {
     id: 'llama-3.2-1b-instruct-q4',
     name: 'Llama 3.2 1B Instruct',
     family: 'Llama',
