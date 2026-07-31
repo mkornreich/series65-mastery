@@ -15,6 +15,9 @@ android {
 }
 
 dependencies {
-  // Google's on-device Gemini Nano access via AICore (experimental).
-  implementation 'com.google.ai.edge.aicore:aicore:0.0.1-exp02'
+  // Google's on-device Gemini Nano via the ML Kit GenAI Prompt API (current,
+  // non-deprecated path; built on AICore).
+  // beta2 is the newest release whose Kotlin metadata (2.2.0) is readable by the
+  // project's Kotlin 2.1 compiler; beta3+ use metadata 2.3.0 and fail to compile.
+  implementation 'com.google.mlkit:genai-prompt:1.0.0-beta2'
 }

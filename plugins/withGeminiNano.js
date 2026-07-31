@@ -1,11 +1,12 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
-// The AICore (Gemini Nano) AAR declares a high minSdkVersion. Rather than raise
-// the whole app's minSdk (which would drop older devices that can still use the
-// GGUF/llama path), we tell the manifest merger to allow the lower app minSdk
-// and override the library's requirement. Gemini Nano code is guarded at runtime
-// by an availability check, so old devices simply never call into it.
-const AICORE_LIB = 'com.google.ai.edge.aicore';
+// The ML Kit GenAI (Gemini Nano) AARs declare a higher minSdkVersion (26) than
+// the app (24). Rather than raise the whole app's minSdk (which would drop older
+// devices that can still use the GGUF/llama path), we tell the manifest merger to
+// allow the lower app minSdk and override the libraries' requirement. Gemini Nano
+// code is guarded at runtime by an availability check, so old devices never call
+// into it.
+const GENAI_LIBS = ['com.google.mlkit.genai.prompt', 'com.google.mlkit.genai.common'];
 
 module.exports = function withGeminiNano(config) {
   return withAndroidManifest(config, (cfg) => {
@@ -21,7 +22,7 @@ module.exports = function withGeminiNano(config) {
     const libs = new Set(
       (existing ? existing.split(',') : []).map((s) => s.trim()).filter(Boolean)
     );
-    libs.add(AICORE_LIB);
+    GENAI_LIBS.forEach((lib) => libs.add(lib));
     usesSdk.$['tools:overrideLibrary'] = Array.from(libs).join(',');
 
     return cfg;

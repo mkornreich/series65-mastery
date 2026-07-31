@@ -43,9 +43,12 @@ pretest), 180 minutes, and a pass mark of 92/130 across four sections weighted
   answers**, act as an interactive **tutor**, and **generate fresh practice
   questions** for any topic.
 - Two engines, chosen in **Settings → Choose / manage models**:
-  - **Gemini Nano (built‑in)** — Google’s system on‑device model via **AICore**,
-    on supported Pixel devices. No download; the app detects availability and
-    talks to the system model directly (native module in `modules/gemini-nano`).
+  - **Gemini Nano (built‑in)** — Google’s system on‑device model on supported
+    Pixel devices, via the **ML Kit GenAI Prompt API** (`com.google.mlkit:genai-prompt`,
+    the current/non‑deprecated path over AICore). No download; the app detects
+    availability and talks to the system model directly (native local Expo module
+    in `modules/gemini-nano`). The models screen groups everything into
+    **“On this device”** and **“Download to add.”**
   - **Downloadable GGUF models** via [`llama.rn`](https://github.com/mybigday/llama.rn)
     (llama.cpp): Llama 3.2 1B/3B, Qwen2.5 1.5B, Gemma 2 2B, SmolLM2 1.7B. Tune
     temperature / context size / GPU layers.
