@@ -318,6 +318,8 @@ export const SUBJECTS: Subject[] = [
         questionTarget: 6,
         subtopics: [
           "Individual income tax (capital gains, qualified dividends, tax basis, marginal bracket, AMT)",
+          "Pension and retirement plan distributions (required minimum distributions, RMD)",
+          "Government benefit implications (income-related monthly adjustment amounts, IRMAA)",
           "Corporations, trusts, and estates income tax",
           "Wealth transfer, estate tax, and gift tax fundamentals",
         ],
@@ -366,9 +368,9 @@ export const SUBJECTS: Subject[] = [
         subjectId: "recommendations",
         questionTarget: 5,
         subtopics: [
-          "Types of ownership (JTWROS, tenants in common, tenancy by the entirety)",
+          "Types of ownership (JTWROS, tenants in common, tenancy by the entirety, community property with rights of survivorship (CPWROS))",
           "Pay on death and transfer on death",
-          "Beneficiary designation",
+          "Beneficiary designation (including per stirpes)",
           "Trusts and wills",
           "Qualified domestic relations order (QDRO)",
           "Donor advised funds",
