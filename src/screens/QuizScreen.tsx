@@ -91,6 +91,20 @@ export default function QuizScreen({ route, navigation }: Props) {
   if (seenStemsRef.current === null) {
     seenStemsRef.current = new Set(questions.map((q) => normStem(q.stem)));
   }
+  // Blocks a second tap from advancing twice before the re-render commits
+  // (functional setIndex would otherwise compound and skip past the end).
+  const advanceGuard = useRef(false);
+  useEffect(() => {
+    advanceGuard.current = false;
+  });
+  // Skip background-prefetch state updates once the screen has gone away.
+  const mountedRef = useRef(true);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    []
+  );
 
   // Monotonic id for the in-flight AI explanation. Bumping it invalidates any
   // stream still arriving from a previous question so its tokens are dropped.
@@ -103,6 +117,9 @@ export default function QuizScreen({ route, navigation }: Props) {
     setAiText('');
     setAiLoading(false);
     setAiError(null);
+    // Clear a transient generation error on advance so the background prefetch
+    // re-attempts while buffered questions remain (soft retry, not a hard latch).
+    setGenError(null);
   }, [current?.id]);
 
   // Endless AI practice: prefetch the next batch in the background as the user
@@ -118,6 +135,7 @@ export default function QuizScreen({ route, navigation }: Props) {
     llm
       .generateQuestions(aiComp, AI_BATCH, avoid)
       .then((qs) => {
+        if (!mountedRef.current) return;
         const seen = seenStemsRef.current!;
         const fresh = qs.filter((q) => {
           const key = normStem(q.stem);
@@ -128,12 +146,12 @@ export default function QuizScreen({ route, navigation }: Props) {
         if (fresh.length) setQuestions((prev) => [...prev, ...fresh]);
         else setGenError('The model kept repeating itself.');
       })
-      .catch((e: any) =>
-        setGenError(e?.message ?? 'Could not generate more questions.')
-      )
+      .catch((e: any) => {
+        if (mountedRef.current) setGenError(e?.message ?? 'Could not generate more questions.');
+      })
       .finally(() => {
         generatingRef.current = false;
-        setGeneratingMore(false);
+        if (mountedRef.current) setGeneratingMore(false);
       });
   }, [aiComp, current, index, questions, genError, llm]);
 
@@ -188,6 +206,9 @@ export default function QuizScreen({ route, navigation }: Props) {
   const finishSession = useCallback(() => finish(records), [finish, records]);
 
   const next = useCallback(() => {
+    // Ignore a second tap fired before this one's re-render commits.
+    if (advanceGuard.current) return;
+    advanceGuard.current = true;
     const finalRecords = records;
     const atEnd = index >= questions.length - 1;
     if (!atEnd) {
@@ -278,12 +299,14 @@ export default function QuizScreen({ route, navigation }: Props) {
       <Card>
         <View style={styles.topRow}>
           <Text style={styles.topic}>{comp?.title ?? 'Practice'}</Text>
-          <Text
-            style={[styles.flag, { color: isFlagged ? colors.warn : colors.textFaint }]}
-            onPress={() => toggleFlag(current.id)}
-          >
-            {isFlagged ? '★ Flagged' : '☆ Flag'}
-          </Text>
+          {current.source !== 'ai' && (
+            <Text
+              style={[styles.flag, { color: isFlagged ? colors.warn : colors.textFaint }]}
+              onPress={() => toggleFlag(current.id)}
+            >
+              {isFlagged ? '★ Flagged' : '☆ Flag'}
+            </Text>
+          )}
         </View>
 
         <QuestionBlock
@@ -353,11 +376,13 @@ export default function QuizScreen({ route, navigation }: Props) {
           {index < questions.length - 1 ? (
             <AppButton title="Next question" onPress={next} />
           ) : genError ? (
-            <AppButton title="↻ Generate more" onPress={retryGenerate} />
+            <>
+              <AppButton title="↻ Generate more" onPress={retryGenerate} />
+              <Text style={styles.aiError}>{genError}</Text>
+            </>
           ) : (
             <AppButton title="Generating more…" loading disabled />
           )}
-          {genError && <Text style={styles.aiError}>{genError}</Text>}
           <AppButton
             title="Finish session"
             variant="ghost"

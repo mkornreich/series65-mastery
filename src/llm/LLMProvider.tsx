@@ -112,6 +112,9 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [loadedModelId, setLoadedModelId] = useState<string | null>(null);
   const busy = useRef(false);
+  // The in-flight model-load promise, so a call that lands mid-load can await it
+  // instead of failing with "already loading".
+  const loadPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (!available) return;
@@ -187,14 +190,17 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setStatus('loading');
       setLoadProgress(0);
+      const p = doLoad(id);
+      loadPromiseRef.current = p;
       try {
-        await doLoad(id);
+        await p;
         setStatus('ready');
       } catch (e: any) {
         setError(e?.message ?? String(e));
         setStatus('error');
       } finally {
         busy.current = false;
+        loadPromiseRef.current = null;
       }
     },
     [available, doLoad]
@@ -230,17 +236,26 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       throw new Error('On-device AI is unavailable in this build. Create a development build.');
     if (!activeModelId) throw new Error('No model selected. Choose one in Settings.');
     if (loadedRef.current === activeModelId) return;
+    // A load is already in flight (e.g. auto-load on startup): wait for it rather
+    // than failing, then use it if it produced the model we need.
+    if (busy.current && loadPromiseRef.current) {
+      await loadPromiseRef.current.catch(() => {});
+      if (loadedRef.current === activeModelId) return;
+    }
     if (busy.current) throw new Error('A model is already loading. Try again in a moment.');
     busy.current = true;
     setStatus('loading');
+    const p = doLoad(activeModelId);
+    loadPromiseRef.current = p;
     try {
-      await doLoad(activeModelId);
+      await p;
       setStatus('ready');
     } catch (e) {
       setStatus('error');
       throw e;
     } finally {
       busy.current = false;
+      loadPromiseRef.current = null;
     }
   }, [available, activeModelId, doLoad]);
 

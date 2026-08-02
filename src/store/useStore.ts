@@ -86,6 +86,11 @@ export const useStore = create<StoreState>()(
 
       recordAnswer: (q, chosenIndex) =>
         set((s) => {
+          // AI-generated questions are ephemeral practice: their ids never exist
+          // in the bank, so persisting them would poison spaced-repetition, the
+          // review/missed queues, and mastery (which would certify "mastered" off
+          // unvalidated model content). Skip all persistent progress for them.
+          if (q.source === 'ai') return s;
           const now = Date.now();
           const correct = chosenIndex === q.answerIndex;
 

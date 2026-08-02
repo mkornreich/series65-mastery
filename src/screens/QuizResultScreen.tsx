@@ -57,8 +57,10 @@ export default function QuizResultScreen({ route, navigation }: Props) {
               navigation.replace('Quiz', {
                 config: {
                   title: 'Retry missed',
-                  mode: 'custom',
-                  questionIds: missed.map((m) => m.question.id),
+                  // Pass the full question objects (not ids) so AI-generated
+                  // questions — whose ids aren't in the bank — retry correctly too.
+                  mode: 'ai',
+                  inlineQuestions: missed.map((m) => m.question),
                 },
               })
             }
