@@ -44,7 +44,13 @@ export type RootStackParamList = {
   };
   Exam: { useAI?: boolean };
   ExamResult: { resultId: string };
-  Tutor: { topicTitle?: string; componentId?: string };
+  Tutor: {
+    topicTitle?: string;
+    componentId?: string;
+    /** When opened from a practice question, scope the chat to it. */
+    question?: Question;
+    chosenIndex?: number;
+  };
   ModelManager: undefined;
   About: undefined;
   MarkdownPreview: undefined;

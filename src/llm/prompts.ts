@@ -39,11 +39,14 @@ export function buildExplainMessages(
 export function buildTutorMessages(
   topicTitle: string | undefined,
   history: ChatMessage[],
-  userMessage: string
+  userMessage: string,
+  /** Optional grounding, e.g. the specific practice question being discussed. */
+  context?: string
 ): ChatMessage[] {
   const sys =
     TUTOR_SYSTEM +
-    (topicTitle ? ` The student is currently studying: "${topicTitle}".` : '');
+    (topicTitle ? ` The student is currently studying: "${topicTitle}".` : '') +
+    (context ? `\n\n${context}` : '');
   return [
     { role: 'system', content: sys },
     ...history.slice(-8),

@@ -82,7 +82,8 @@ interface LLMContextValue {
     topicTitle: string | undefined,
     history: ChatMessage[],
     message: string,
-    onToken?: (t: string) => void
+    onToken?: (t: string) => void,
+    context?: string
   ) => Promise<string>;
   generateQuestions: (
     component: Component,
@@ -310,8 +311,9 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       topicTitle: string | undefined,
       history: ChatMessage[],
       message: string,
-      onToken?: (t: string) => void
-    ) => runText(buildTutorMessages(topicTitle, history, message), onToken),
+      onToken?: (t: string) => void,
+      context?: string
+    ) => runText(buildTutorMessages(topicTitle, history, message, context), onToken),
     [runText]
   );
 

@@ -5,7 +5,6 @@ import { RootStackParamList, AnswerRecord } from '../navigation/types';
 import { Question } from '../types';
 import { Screen, Card, AppButton, Body } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
-import { Markdown } from '../components/markdown';
 import { CalculatorModal } from '../components/Calculator';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
@@ -76,9 +75,6 @@ export default function QuizScreen({ route, navigation }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [records, setRecords] = useState<AnswerRecord[]>([]);
-  const [aiText, setAiText] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [generatingMore, setGeneratingMore] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [showCalc, setShowCalc] = useState(false);
@@ -135,19 +131,9 @@ export default function QuizScreen({ route, navigation }: Props) {
     []
   );
 
-  // Monotonic id for the in-flight AI explanation. Bumping it invalidates any
-  // stream still arriving from a previous question so its tokens are dropped.
-  const aiReqRef = useRef(0);
-
-  // Reset the AI explanation whenever the question changes and cancel any stream
-  // still loading, so a slow previous request can't render under the new question.
+  // Clear a transient generation error on advance so the background prefetch
+  // re-attempts while buffered questions remain (soft retry, not a hard latch).
   useEffect(() => {
-    aiReqRef.current += 1;
-    setAiText('');
-    setAiLoading(false);
-    setAiError(null);
-    // Clear a transient generation error on advance so the background prefetch
-    // re-attempts while buffered questions remain (soft retry, not a hard latch).
     setGenError(null);
   }, [current?.id]);
 
@@ -204,24 +190,6 @@ export default function QuizScreen({ route, navigation }: Props) {
     setSelected(null);
     setRevealed(true);
   }, [current, revealed, recordAnswer]);
-
-  const askAI = useCallback(async () => {
-    if (!current) return;
-    const reqId = (aiReqRef.current += 1);
-    setAiError(null);
-    setAiText('');
-    setAiLoading(true);
-    try {
-      await llm.explain(current, selected ?? -1, (tok) => {
-        if (aiReqRef.current !== reqId) return; // stale stream from a prior question
-        setAiText((t) => t + tok);
-      });
-    } catch (e: any) {
-      if (aiReqRef.current === reqId) setAiError(e?.message ?? 'AI is unavailable.');
-    } finally {
-      if (aiReqRef.current === reqId) setAiLoading(false);
-    }
-  }, [current, selected, llm]);
 
   const finish = useCallback(
     (finalRecords: AnswerRecord[]) => {
@@ -384,25 +352,22 @@ export default function QuizScreen({ route, navigation }: Props) {
 
           {aiEnabled && (
             <View style={{ marginTop: spacing.md }}>
-              {!aiText && !aiLoading && (
-                <AppButton
-                  title={llm.available ? 'Explain with AI tutor' : 'AI tutor (needs setup)'}
-                  variant="ghost"
-                  icon="🤖"
-                  onPress={
-                    llm.available
-                      ? askAI
-                      : () => navigation.navigate('ModelManager')
-                  }
-                />
-              )}
-              {(aiLoading || aiText) && (
-                <View style={styles.aiBox}>
-                  <Text style={styles.aiLabel}>AI TUTOR</Text>
-                  {aiText ? <Markdown source={aiText} baseSize={font.body} /> : <Body>Thinking…</Body>}
-                </View>
-              )}
-              {aiError && <Text style={styles.aiError}>{aiError}</Text>}
+              <AppButton
+                title={llm.available ? 'Ask AI tutor about this question' : 'AI tutor (needs setup)'}
+                variant="ghost"
+                icon="💬"
+                onPress={
+                  llm.available
+                    ? () =>
+                        navigation.navigate('Tutor', {
+                          topicTitle: comp?.title,
+                          componentId: current.componentId,
+                          question: current,
+                          chosenIndex: selected ?? -1,
+                        })
+                    : () => navigation.navigate('ModelManager')
+                }
+              />
             </View>
           )}
         </Card>

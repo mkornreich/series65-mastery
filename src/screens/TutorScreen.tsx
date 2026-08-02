@@ -22,7 +22,7 @@ import { RootStackParamList } from '../navigation/types';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useLLM } from '../llm/LLMProvider';
-import { ChatMessage } from '../types';
+import { ChatMessage, Question } from '../types';
 import { AppButton } from '../components/ui';
 import { Markdown } from '../components/markdown';
 
@@ -42,6 +42,36 @@ function suggestionsFor(topic?: string): string[] {
     'Give me a memory trick for the exam.',
     'What’s a common Series 65 exam trap?',
     'Quiz me with one hard Series 65 question.',
+  ];
+}
+
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+/** System-prompt grounding so the tutor answers about the exact question. */
+function questionContext(q: Question, chosenIndex?: number): string {
+  const choices = q.choices.map((c, i) => `${LETTERS[i]}. ${c}`).join('\n');
+  const correct = `${LETTERS[q.answerIndex]}. ${q.choices[q.answerIndex]}`;
+  const chose =
+    typeof chosenIndex === 'number' && chosenIndex >= 0
+      ? `${LETTERS[chosenIndex]}. ${q.choices[chosenIndex]}`
+      : 'they did not answer (skipped it)';
+  return (
+    'The student is asking about THIS specific Series 65 practice question. ' +
+    'Ground every answer in it and refer to the answer choices by letter.\n\n' +
+    `Question: ${q.stem}\n${choices}\n\n` +
+    `Correct answer: ${correct}\nThe student chose: ${chose}\n\n` +
+    `Reference explanation: ${q.explanation}`
+  );
+}
+
+function questionSuggestions(q: Question, chosenIndex?: number): string[] {
+  const answeredWrong =
+    typeof chosenIndex === 'number' && chosenIndex >= 0 && chosenIndex !== q.answerIndex;
+  return [
+    'Why is the correct answer right?',
+    answeredWrong ? 'Why was my answer wrong?' : 'Why are the other choices wrong?',
+    'Explain the concept behind this simply.',
+    'Give me a memory trick for this.',
   ];
 }
 
@@ -82,8 +112,16 @@ function ThinkingDots({ color }: { color: string }) {
 }
 
 export default function TutorScreen({ route, navigation }: Props) {
-  const { topicTitle } = route.params ?? {};
-  const SUGGESTIONS = suggestionsFor(topicTitle);
+  const { topicTitle, question, chosenIndex } = route.params ?? {};
+  const qContext = useMemo(
+    () => (question ? questionContext(question, chosenIndex) : undefined),
+    [question, chosenIndex]
+  );
+  const SUGGESTIONS = useMemo(
+    () =>
+      question ? questionSuggestions(question, chosenIndex) : suggestionsFor(topicTitle),
+    [question, chosenIndex, topicTitle]
+  );
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const llm = useLLM();
@@ -123,17 +161,23 @@ export default function TutorScreen({ route, navigation }: Props) {
       setSending(true);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
       try {
-        await llm.tutor(topicTitle, history, msg, (tok) => {
-          setMessages((m) => {
-            const copy = [...m];
-            copy[copy.length - 1] = {
-              role: 'assistant',
-              content: copy[copy.length - 1].content + tok,
-            };
-            return copy;
-          });
-          scrollRef.current?.scrollToEnd({ animated: false });
-        });
+        await llm.tutor(
+          topicTitle,
+          history,
+          msg,
+          (tok) => {
+            setMessages((m) => {
+              const copy = [...m];
+              copy[copy.length - 1] = {
+                role: 'assistant',
+                content: copy[copy.length - 1].content + tok,
+              };
+              return copy;
+            });
+            scrollRef.current?.scrollToEnd({ animated: false });
+          },
+          qContext
+        );
       } catch (e: any) {
         setMessages((m) => {
           const copy = [...m];
@@ -149,11 +193,19 @@ export default function TutorScreen({ route, navigation }: Props) {
         setSending(false);
       }
     },
-    [messages, sending, llm, topicTitle]
+    [messages, sending, llm, topicTitle, qContext]
   );
 
   return (
     <View style={[styles.flex, { paddingBottom: kbHeight }]}>
+      {question && (
+        <View style={styles.qCard}>
+          <Text style={styles.qCardLabel}>ABOUT THIS QUESTION</Text>
+          <Text style={styles.qCardStem} numberOfLines={3}>
+            {question.stem}
+          </Text>
+        </View>
+      )}
       <ScrollView
         ref={scrollRef}
         style={styles.flex}
@@ -163,7 +215,11 @@ export default function TutorScreen({ route, navigation }: Props) {
         {messages.length === 0 && (
           <View>
             <Text style={styles.hello}>
-              {topicTitle ? `Ask about “${topicTitle}”` : 'Ask me anything about the Series 65.'}
+              {question
+                ? 'Ask about this question'
+                : topicTitle
+                ? `Ask about “${topicTitle}”`
+                : 'Ask me anything about the Series 65.'}
             </Text>
             <Text style={styles.helloSub}>
               I run on your device. {llm.available ? '' : 'Set up a model in Settings to begin.'}
@@ -234,6 +290,21 @@ export default function TutorScreen({ route, navigation }: Props) {
 const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.bg },
+  qCard: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  qCardLabel: {
+    color: colors.accent,
+    fontSize: font.tiny,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  qCardStem: { color: colors.text, fontSize: font.small, fontWeight: '600', lineHeight: 19 },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   hello: { color: colors.text, fontSize: font.h3, fontWeight: '800', marginTop: spacing.md },
   helloSub: { color: colors.textMuted, fontSize: font.small, marginTop: spacing.xs, marginBottom: spacing.lg },
