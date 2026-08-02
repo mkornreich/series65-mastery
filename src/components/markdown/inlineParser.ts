@@ -64,6 +64,15 @@ function parseSpans(cur: Cur, opts: ParseOptions, stops: string[]): { nodes: Spa
       continue;
     }
 
+    // Backslash at end of line = CommonMark hard line break (emit a break node,
+    // not a literal backslash + soft space).
+    if (c === '\\' && c2 === '\n') {
+      flush();
+      nodes.push({ type: 'break' });
+      cur.i += 2;
+      continue;
+    }
+
     // Backslash escape of a literal punctuation char.
     if (c === '\\' && c2 !== undefined && ESCAPABLE.has(c2)) {
       text += c2;

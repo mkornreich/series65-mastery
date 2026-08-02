@@ -7,7 +7,7 @@ import { Screen, Card, AppButton, Body, SectionHeader } from '../components/ui';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore, ThemeMode } from '../store/useStore';
-import { useLLM } from '../llm/LLMProvider';
+import { useLLM, isLocalId, localFileName, localLitertModelInfo } from '../llm/LLMProvider';
 import { MODEL_BY_ID } from '../data/models';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -110,12 +110,21 @@ export default function SettingsScreen() {
   const setGenParams = useStore((s) => s.setGenParams);
   const resetProgress = useStore((s) => s.resetProgress);
 
-  const activeModel = settings.activeModelId ? MODEL_BY_ID[settings.activeModelId] : null;
+  // Imported LiteRT-LM models use "local:<file>" ids that aren't in MODEL_BY_ID,
+  // so resolve those separately — otherwise Settings shows "No model selected"
+  // and hides the load/unload controls while such a model is active.
+  const activeModel = settings.activeModelId
+    ? isLocalId(settings.activeModelId)
+      ? localLitertModelInfo(localFileName(settings.activeModelId))
+      : MODEL_BY_ID[settings.activeModelId] ?? null
+    : null;
 
   const statusText = !llm.available
     ? 'Unavailable in this build'
     : llm.status === 'ready'
-    ? `Loaded: ${activeModel?.name ?? ''}`
+    ? `Loaded: ${activeModel?.name ?? ''}${
+        llm.activeBackend ? ` · running on ${llm.activeBackend.toUpperCase()}` : ''
+      }`
     : llm.status === 'loading'
     ? `Loading… ${llm.loadProgress}%`
     : activeModel

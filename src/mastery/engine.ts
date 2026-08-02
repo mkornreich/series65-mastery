@@ -194,7 +194,9 @@ export function gradeFor(correct: boolean): number {
 }
 
 export function isDue(item: SRItem | undefined, now: number): boolean {
-  return !!item && item.reps > 0 && item.due <= now;
+  // A lapsed card (reps reset to 0 on a wrong answer) is still due for its
+  // next-day re-review, so gate only on the scheduled due time, not reps.
+  return !!item && item.due <= now;
 }
 
 export function dueCount(

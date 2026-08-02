@@ -42,12 +42,22 @@ export default function ReviewScreen() {
       </Card>
 
       <AppButton
-        title={due ? `Review ${due} due questions` : 'Nothing due right now'}
+        title={
+          due
+            ? `Review ${due} due questions`
+            : missed.length
+            ? `Review ${missed.length} missed questions`
+            : 'Nothing due right now'
+        }
         icon="🔁"
         disabled={!due && missed.length === 0}
         onPress={() =>
           navigation.navigate('Quiz', {
-            config: { title: 'Spaced review', mode: 'review', count: Math.max(due, 20) },
+            config: {
+              title: 'Spaced review',
+              mode: 'review',
+              count: due ? Math.min(due, 25) : 20,
+            },
           })
         }
       />

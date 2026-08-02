@@ -34,10 +34,10 @@ const LOCAL_PREFIX = 'local:';
 export function localLitertId(fileName: string): string {
   return LOCAL_PREFIX + fileName;
 }
-function isLocalId(id: string): boolean {
+export function isLocalId(id: string): boolean {
   return id.startsWith(LOCAL_PREFIX);
 }
-function localFileName(id: string): string {
+export function localFileName(id: string): string {
   return id.slice(LOCAL_PREFIX.length);
 }
 
@@ -71,6 +71,8 @@ interface LLMContextValue {
   status: EngineStatus;
   activeModelId: string | null;
   activeKind: EngineKind | null;
+  /** Which processor the currently-loaded model actually runs on. */
+  activeBackend: 'gpu' | 'cpu' | null;
   loadProgress: number;
   error: string | null;
   loadedModelId: string | null;
@@ -112,6 +114,7 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   const [loadProgress, setLoadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loadedModelId, setLoadedModelId] = useState<string | null>(null);
+  const [activeBackend, setActiveBackend] = useState<'gpu' | 'cpu' | null>(null);
   const busy = useRef(false);
   // The in-flight model-load promise, so a call that lands mid-load can await it
   // instead of failing with "already loading".
@@ -164,14 +167,18 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
         const wantGpu = model.backend !== 'cpu';
         try {
           await litertLoadModel(path, wantGpu, Math.max(1024, nCtx));
+          setActiveBackend(wantGpu ? 'gpu' : 'cpu');
         } catch (e) {
-          if (wantGpu) await litertLoadModel(path, false, Math.max(1024, nCtx));
-          else throw e;
+          if (wantGpu) {
+            await litertLoadModel(path, false, Math.max(1024, nCtx));
+            setActiveBackend('cpu'); // GPU load failed; running on CPU fallback
+          } else throw e;
         }
       } else {
         if (!(await isDownloaded(model))) throw new Error('Model is not downloaded yet.');
         await litertUnload().catch(() => {});
         await engine.load(modelPath(model), (p) => setLoadProgress(p), { nCtx, nGpuLayers });
+        setActiveBackend(nGpuLayers > 0 ? 'gpu' : 'cpu');
       }
       loadedRef.current = id;
       setLoadedModelId(id);
@@ -211,26 +218,34 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     await releaseAll();
     loadedRef.current = null;
     setLoadedModelId(null);
+    setActiveBackend(null);
     setStatus(available ? (activeModelId ? 'idle' : 'no-model') : 'unavailable');
   }, [available, activeModelId, releaseAll]);
 
+  // Auto-load the active model on startup. Settings are persisted via zustand +
+  // AsyncStorage, which rehydrates ASYNCHRONOUSLY — so on the first render the
+  // values are still the defaults (activeModelId=null). Depend on the hydrated
+  // values (not `[]`) and guard with a ref so it runs exactly once, after the
+  // real settings land. An empty-deps effect would only ever see the defaults.
+  const autoLoadedRef = useRef(false);
   useEffect(() => {
+    if (autoLoadedRef.current) return;
     (async () => {
       if (!autoLoadModel || !available || !activeModelId) return;
       const kind = kindOf(activeModelId);
-      if (kind === 'aicore') {
-        loadModel(activeModelId).catch(() => {});
-      } else {
+      let canLoad = kind === 'aicore';
+      if (!canLoad) {
         const model = isLocalId(activeModelId)
           ? localLitertModelInfo(localFileName(activeModelId))
           : MODEL_BY_ID[activeModelId];
-        if (model && (model.local || (await isDownloaded(model)))) {
-          loadModel(activeModelId).catch(() => {});
-        }
+        canLoad = !!model && (model.local || (await isDownloaded(model)));
+      }
+      if (canLoad && !autoLoadedRef.current) {
+        autoLoadedRef.current = true;
+        loadModel(activeModelId).catch(() => {});
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoLoadModel, available, activeModelId, loadModel]);
 
   const ensureReady = useCallback(async () => {
     if (!available)
@@ -355,6 +370,7 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       status,
       activeModelId,
       activeKind,
+      activeBackend,
       loadProgress,
       error,
       loadedModelId,
@@ -371,6 +387,7 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       status,
       activeModelId,
       activeKind,
+      activeBackend,
       loadProgress,
       error,
       loadedModelId,

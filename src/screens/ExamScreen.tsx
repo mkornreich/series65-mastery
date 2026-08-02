@@ -7,7 +7,7 @@ import { QuestionBlock } from '../components/QuestionBlock';
 import { CalculatorModal } from '../components/Calculator';
 import { spacing, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
-import { generateExam } from '../exam/generator';
+import { generateExam, ExamAssembly } from '../exam/generator';
 import { scoreExam } from '../exam/scoring';
 import { EXAM_SPEC } from '../data/curriculum';
 import { useStore } from '../store/useStore';
@@ -29,10 +29,14 @@ export default function ExamScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const addExamResult = useStore((s) => s.addExamResult);
 
-  const examRef = useRef(generateExam());
+  // Lazily assemble the exam exactly once. `useRef(generateExam())` would rebuild
+  // a full exam on every render (the 1s timer alone forces one per second).
+  const examRef = useRef<ExamAssembly | null>(null);
+  if (!examRef.current) examRef.current = generateExam();
+  const exam = examRef.current;
   const startedAtRef = useRef(Date.now());
   const submittedRef = useRef(false);
-  const questions = examRef.current.questions;
+  const questions = exam.questions;
 
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -50,7 +54,7 @@ export default function ExamScreen({ navigation }: Props) {
       const durationSec = Math.round((Date.now() - startedAtRef.current) / 1000);
       const result = scoreExam({
         questions,
-        pretestIds: examRef.current.pretestIds,
+        pretestIds: exam.pretestIds,
         answers,
         durationSec,
         startedAt: startedAtRef.current,
@@ -58,10 +62,14 @@ export default function ExamScreen({ navigation }: Props) {
       addExamResult(result);
       navigation.replace('ExamResult', { resultId: result.id });
     },
-    [answers, questions, addExamResult, navigation]
+    [answers, questions, exam, addExamResult, navigation]
   );
 
-  // Countdown timer.
+  // Countdown timer. Keep the latest submit in a ref so the interval is created
+  // ONCE — depending on `submit` (which changes on every answer) would tear down
+  // and recreate the interval each tap, freezing the on-screen clock.
+  const submitRef = useRef(submit);
+  submitRef.current = submit;
   useEffect(() => {
     const id = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
@@ -69,11 +77,11 @@ export default function ExamScreen({ navigation }: Props) {
       setSecondsLeft(left);
       if (left <= 0) {
         clearInterval(id);
-        submit(true);
+        submitRef.current(true);
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [submit]);
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -207,7 +215,11 @@ export default function ExamScreen({ navigation }: Props) {
         </Card>
       )}
 
-      <CalculatorModal visible={showCalc} onClose={() => setShowCalc(false)} />
+      <CalculatorModal
+        visible={showCalc}
+        onClose={() => setShowCalc(false)}
+        resetKey={current?.id}
+      />
     </Screen>
   );
 }

@@ -236,9 +236,12 @@ export default function QuizScreen({ route, navigation }: Props) {
       if (config.componentId) {
         // One topic: drill until that topic is mastered.
         if (!isMastered(st.mastery[config.componentId])) {
-          const more = selectForComponent(config.componentId, st.sr, st.missed, 5).filter(
-            (q) => !servedIds.has(q.id)
-          );
+          // Rank the whole bank, drop already-served, THEN take the next few —
+          // filtering after a top-N slice would strip every fresh question once
+          // the highest-priority (missed) items are all served, ending early.
+          const more = selectForComponent(config.componentId, st.sr, st.missed, 999)
+            .filter((q) => !servedIds.has(q.id))
+            .slice(0, 5);
           if (more.length) {
             appendAndAdvance(more);
             return;
@@ -254,9 +257,9 @@ export default function QuizScreen({ route, navigation }: Props) {
           .filter((c) => !isMastered(st.mastery[c.id]))
           .sort((a, b) => masteryScore(st.mastery[a.id]) - masteryScore(st.mastery[b.id]));
         for (const c of unmastered) {
-          const more = selectForComponent(c.id, st.sr, st.missed, 5).filter(
-            (q) => !servedIds.has(q.id)
-          );
+          const more = selectForComponent(c.id, st.sr, st.missed, 999)
+            .filter((q) => !servedIds.has(q.id))
+            .slice(0, 5);
           if (more.length) {
             appendAndAdvance(more);
             return;
@@ -413,7 +416,11 @@ export default function QuizScreen({ route, navigation }: Props) {
         />
       )}
 
-      <CalculatorModal visible={showCalc} onClose={() => setShowCalc(false)} />
+      <CalculatorModal
+        visible={showCalc}
+        onClose={() => setShowCalc(false)}
+        resetKey={current?.id}
+      />
     </Screen>
   );
 }

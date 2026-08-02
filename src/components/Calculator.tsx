@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Animated, PanResponder } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { ThemeColors, spacing, radius, font } from '../theme/theme';
@@ -29,7 +29,16 @@ function fmt(n: number): string {
   return String(rounded);
 }
 
-export function CalculatorModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function CalculatorModal({
+  visible,
+  onClose,
+  resetKey,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  /** Change this (e.g. per question id) to clear the calculator automatically. */
+  resetKey?: string | number;
+}) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
@@ -46,6 +55,14 @@ export function CalculatorModal({ visible, onClose }: { visible: boolean; onClos
     waitRef.current = false;
     errRef.current = false;
   };
+
+  // Clear the calculator on every new question (like the real exam calculator,
+  // which does not carry a running total from one question to the next). The
+  // dragged position is intentionally preserved so the user needn't re-move it.
+  useEffect(() => {
+    reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
   const inputDigit = (d: string) => {
     if (errRef.current) reset();
@@ -110,13 +127,26 @@ export function CalculatorModal({ visible, onClose }: { visible: boolean; onClos
     setDisplay((c) => (c.length > 1 ? c.slice(0, -1) : '0'));
   };
 
-  // Drag handling.
+  // Drag handling. Grab the responder as soon as the handle is touched, and drive
+  // the position by writing the animated value directly on each move — binding
+  // Animated.event straight to pan.x/pan.y did not update under the New Architecture.
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
-      onPanResponderGrant: () => pan.extractOffset(),
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        pan.extractOffset();
+      },
+      onPanResponderMove: (_e, g) => {
+        pan.setValue({ x: g.dx, y: g.dy });
+      },
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+      },
+      onPanResponderTerminate: () => {
+        pan.flattenOffset();
+      },
     })
   ).current;
 
@@ -140,10 +170,13 @@ export function CalculatorModal({ visible, onClose }: { visible: boolean; onClos
       <Pressable style={styles.backdrop} onPress={onClose} />
       <Animated.View style={[styles.panel, { transform: pan.getTranslateTransform() }]}>
         <View style={styles.handle} {...panResponder.panHandlers}>
-          <Text style={styles.handleText}>Calculator</Text>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <Text style={styles.close}>✕</Text>
-          </Pressable>
+          <View style={styles.gripBar} />
+          <View style={styles.handleRow}>
+            <Text style={styles.handleText}>Calculator · drag to move</Text>
+            <Pressable onPress={onClose} hitSlop={16}>
+              <Text style={styles.close}>✕</Text>
+            </Pressable>
+          </View>
         </View>
         <View style={styles.displayWrap}>
           <Text style={styles.display} numberOfLines={1} adjustsFontSizeToFit>
@@ -207,11 +240,22 @@ const makeStyles = (colors: ThemeColors) =>
       elevation: 12,
     },
     handle: {
+      paddingHorizontal: spacing.xs,
+      paddingTop: spacing.xs,
+      paddingBottom: spacing.sm,
+    },
+    gripBar: {
+      alignSelf: 'center',
+      width: 40,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      marginBottom: spacing.sm,
+    },
+    handleRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.xs,
     },
     handleText: { color: colors.textMuted, fontSize: font.small, fontWeight: '800', letterSpacing: 0.5 },
     close: { color: colors.textMuted, fontSize: font.h3, fontWeight: '800' },

@@ -195,11 +195,15 @@ export function coerceQuestion(
 ): Question | null {
   if (!raw || typeof raw !== 'object') return null;
   const stem = typeof raw.stem === 'string' ? raw.stem.trim() : '';
+  // Do NOT drop empty entries — that would re-index the array and misalign
+  // answerIndex (silently marking the wrong choice correct). Require exactly 4
+  // non-empty choices and reject otherwise.
   const choices = Array.isArray(raw.choices)
-    ? raw.choices.map((c: any) => String(c)).filter((c: string) => c.length)
+    ? raw.choices.map((c: any) => String(c).trim())
     : [];
   const answerIndex = Number(raw.answerIndex);
-  if (!stem || choices.length !== 4) return null;
+  if (!stem || choices.length !== 4 || choices.some((c: string) => !c.length))
+    return null;
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3)
     return null;
   const difficulty = DIFFS.includes(raw.difficulty) ? raw.difficulty : 'medium';

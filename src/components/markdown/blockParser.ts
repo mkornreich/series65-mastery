@@ -108,7 +108,9 @@ function parseList(
   const first = matchListItem(lines[start])!;
   const baseIndent = first.indent;
   const ordered = first.ordered;
-  const startNum = ordered ? parseInt(first.marker, 10) || 1 : 1;
+  const parsedStart = parseInt(first.marker, 10);
+  // `|| 1` would coerce a legitimate start of 0 to 1; guard on NaN instead.
+  const startNum = ordered && !Number.isNaN(parsedStart) ? parsedStart : 1;
   const items: ListItem[] = [];
   let i = start;
 

@@ -129,7 +129,19 @@ export default function TutorScreen({ route, navigation }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  // Synchronous mirror of `sending`: a double-tap fires two handlers in the same
+  // frame, before setSending re-renders, so the state guard alone can't block it.
+  const sendingRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // If the user navigates away mid-generation, abort so the shared (serialized)
+  // LLM lock is released instead of being held by an orphaned request.
+  useEffect(
+    () => () => {
+      if (sendingRef.current) llm.stop().catch(() => {});
+    },
+    [llm]
+  );
 
   // The app is edge-to-edge, so the soft keyboard draws over the content instead
   // of resizing the window. Track its height and lift the whole column above it,
@@ -154,14 +166,15 @@ export default function TutorScreen({ route, navigation }: Props) {
   const send = useCallback(
     async (text: string) => {
       const msg = text.trim();
-      if (!msg || sending) return;
+      if (!msg || sendingRef.current) return;
+      sendingRef.current = true;
       setInput('');
       const history = messages;
       setMessages((m) => [...m, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
       setSending(true);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
       try {
-        await llm.tutor(
+        const out = await llm.tutor(
           topicTitle,
           history,
           msg,
@@ -178,6 +191,21 @@ export default function TutorScreen({ route, navigation }: Props) {
           },
           qContext
         );
+        // If nothing streamed (empty completion), fall back to the resolved text
+        // or a clear message so the bubble doesn't stay stuck on "Thinking…".
+        setMessages((m) => {
+          const copy = [...m];
+          const last = copy[copy.length - 1];
+          if (last && last.role === 'assistant' && !last.content.trim()) {
+            copy[copy.length - 1] = {
+              role: 'assistant',
+              content:
+                (out && out.trim()) ||
+                'The model returned an empty response. Try rephrasing your question, or pick a different model in Settings.',
+            };
+          }
+          return copy;
+        });
       } catch (e: any) {
         setMessages((m) => {
           const copy = [...m];
@@ -190,10 +218,11 @@ export default function TutorScreen({ route, navigation }: Props) {
           return copy;
         });
       } finally {
+        sendingRef.current = false;
         setSending(false);
       }
     },
-    [messages, sending, llm, topicTitle, qContext]
+    [messages, llm, topicTitle, qContext]
   );
 
   return (
