@@ -92,25 +92,8 @@ export default function TopicScreen({ route, navigation }: Props) {
       </View>
 
       <AppButton
-        title={aiCapable ? 'Practice (endless)' : `Practice (${Math.min(10, bankCount)} questions)`}
-        icon="✎"
-        onPress={() =>
-          navigation.navigate('Quiz', {
-            config: {
-              title: component.title,
-              mode: 'component',
-              componentId,
-              count: aiCapable ? Math.max(bankCount, 1) : 10,
-              aiInfinite: aiCapable,
-            },
-          })
-        }
-      />
-      <View style={{ height: spacing.sm }} />
-      <AppButton
         title="Mastery drill (until mastered)"
         icon="🎯"
-        variant="secondary"
         onPress={() =>
           navigation.navigate('Quiz', {
             config: {
@@ -119,6 +102,23 @@ export default function TopicScreen({ route, navigation }: Props) {
               componentId,
               count: 5,
               masteryDrill: true,
+            },
+          })
+        }
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title={aiCapable ? 'Practice (endless)' : `Practice (${Math.min(10, bankCount)} questions)`}
+        icon="✎"
+        variant="secondary"
+        onPress={() =>
+          navigation.navigate('Quiz', {
+            config: {
+              title: component.title,
+              mode: 'component',
+              componentId,
+              count: aiCapable ? Math.max(bankCount, 1) : 10,
+              aiInfinite: aiCapable,
             },
           })
         }

@@ -46,26 +46,9 @@ export default function SubjectScreen({ route, navigation }: Props) {
       </Text>
 
       <AppButton
-        title={aiCapable ? 'Practice (endless)' : 'Practice this section'}
-        icon="✎"
-        style={{ marginTop: spacing.md }}
-        onPress={() =>
-          navigation.navigate('Quiz', {
-            config: {
-              title: subject.title,
-              mode: 'subject',
-              subjectId: subject.id,
-              count: aiCapable ? Math.max(bankBySubject(subject.id).length, 1) : 15,
-              aiInfinite: aiCapable,
-            },
-          })
-        }
-      />
-      <View style={{ height: spacing.sm }} />
-      <AppButton
         title="Mastery drill (until mastered)"
         icon="🎯"
-        variant="secondary"
+        style={{ marginTop: spacing.md }}
         onPress={() =>
           navigation.navigate('Quiz', {
             config: {
@@ -74,6 +57,23 @@ export default function SubjectScreen({ route, navigation }: Props) {
               subjectId: subject.id,
               count: 5,
               masteryDrill: true,
+            },
+          })
+        }
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title={aiCapable ? 'Practice (endless)' : 'Practice this section'}
+        icon="✎"
+        variant="secondary"
+        onPress={() =>
+          navigation.navigate('Quiz', {
+            config: {
+              title: subject.title,
+              mode: 'subject',
+              subjectId: subject.id,
+              count: aiCapable ? Math.max(bankBySubject(subject.id).length, 1) : 15,
+              aiInfinite: aiCapable,
             },
           })
         }
