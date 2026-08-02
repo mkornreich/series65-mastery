@@ -198,20 +198,56 @@ export default function TutorScreen({ route, navigation }: Props) {
 
   return (
     <View style={[styles.flex, { paddingBottom: kbHeight }]}>
-      {question && (
-        <View style={styles.qCard}>
-          <Text style={styles.qCardLabel}>ABOUT THIS QUESTION</Text>
-          <Text style={styles.qCardStem} numberOfLines={3}>
-            {question.stem}
-          </Text>
-        </View>
-      )}
       <ScrollView
         ref={scrollRef}
         style={styles.flex}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+        {question && (
+          <View style={styles.qCard}>
+            <Text style={styles.qCardLabel}>ABOUT THIS QUESTION</Text>
+            <Text style={styles.qCardStem}>{question.stem}</Text>
+            <View style={styles.qChoices}>
+              {question.choices.map((c, i) => {
+                const isCorrect = i === question.answerIndex;
+                const isChosen = i === chosenIndex;
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      styles.qChoice,
+                      isCorrect
+                        ? styles.qChoiceCorrect
+                        : isChosen
+                        ? styles.qChoiceWrong
+                        : null,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.qChoiceLetter,
+                        isCorrect
+                          ? styles.qLetterCorrect
+                          : isChosen
+                          ? styles.qLetterWrong
+                          : null,
+                      ]}
+                    >
+                      {LETTERS[i]}
+                    </Text>
+                    <Text style={styles.qChoiceText}>{c}</Text>
+                    {isCorrect ? (
+                      <Text style={styles.qTagCorrect}>✓ Correct</Text>
+                    ) : isChosen ? (
+                      <Text style={styles.qTagWrong}>Your answer</Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
         {messages.length === 0 && (
           <View>
             <Text style={styles.hello}>
@@ -292,19 +328,40 @@ const makeStyles = (colors: ThemeColors) =>
     flex: { flex: 1, backgroundColor: colors.bg },
   qCard: {
     backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   qCardLabel: {
     color: colors.accent,
     fontSize: font.tiny,
     fontWeight: '800',
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  qCardStem: { color: colors.text, fontSize: font.small, fontWeight: '600', lineHeight: 19 },
+  qCardStem: { color: colors.text, fontSize: font.body, fontWeight: '700', lineHeight: 22 },
+  qChoices: { marginTop: spacing.sm },
+  qChoice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    marginTop: 6,
+  },
+  qChoiceCorrect: { borderColor: colors.success, backgroundColor: `${colors.success}18` },
+  qChoiceWrong: { borderColor: colors.danger, backgroundColor: `${colors.danger}18` },
+  qChoiceLetter: { width: 22, fontSize: font.small, fontWeight: '800', color: colors.textMuted },
+  qLetterCorrect: { color: colors.success },
+  qLetterWrong: { color: colors.danger },
+  qChoiceText: { flex: 1, color: colors.text, fontSize: font.small, lineHeight: 19 },
+  qTagCorrect: { color: colors.success, fontSize: font.tiny, fontWeight: '800', marginLeft: 6 },
+  qTagWrong: { color: colors.danger, fontSize: font.tiny, fontWeight: '800', marginLeft: 6 },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   hello: { color: colors.text, fontSize: font.h3, fontWeight: '800', marginTop: spacing.md },
   helloSub: { color: colors.textMuted, fontSize: font.small, marginTop: spacing.xs, marginBottom: spacing.lg },
