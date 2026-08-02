@@ -156,10 +156,10 @@ export default function ExamScreen({ navigation }: Props) {
         />
         <View style={{ width: spacing.sm }} />
         <AppButton
-          title="Next"
-          variant="secondary"
+          title="Next →"
+          variant="primary"
           disabled={index >= questions.length - 1}
-          style={{ flex: 1 }}
+          style={{ flex: 1.5 }}
           onPress={() => setIndex((i) => Math.min(questions.length - 1, i + 1))}
         />
       </View>

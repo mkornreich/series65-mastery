@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, AnswerRecord } from '../navigation/types';
@@ -75,6 +75,19 @@ export default function QuizScreen({ route, navigation }: Props) {
   const current = questions[index];
   const isFlagged = current ? flagged.includes(current.id) : false;
 
+  // Monotonic id for the in-flight AI explanation. Bumping it invalidates any
+  // stream still arriving from a previous question so its tokens are dropped.
+  const aiReqRef = useRef(0);
+
+  // Reset the AI explanation whenever the question changes and cancel any stream
+  // still loading, so a slow previous request can't render under the new question.
+  useEffect(() => {
+    aiReqRef.current += 1;
+    setAiText('');
+    setAiLoading(false);
+    setAiError(null);
+  }, [current?.id]);
+
   const submit = useCallback(() => {
     if (selected == null || !current) return;
     const correct = selected === current.answerIndex;
@@ -83,19 +96,30 @@ export default function QuizScreen({ route, navigation }: Props) {
     setRevealed(true);
   }, [selected, current, recordAnswer]);
 
+  const dontKnow = useCallback(() => {
+    if (!current || revealed) return;
+    // Record as a miss (chosen -1 ≠ any answer) so it re-surfaces in review.
+    recordAnswer(current, -1);
+    setRecords((r) => [...r, { question: current, chosen: -1, correct: false }]);
+    setSelected(null);
+    setRevealed(true);
+  }, [current, revealed, recordAnswer]);
+
   const askAI = useCallback(async () => {
     if (!current) return;
+    const reqId = (aiReqRef.current += 1);
     setAiError(null);
     setAiText('');
     setAiLoading(true);
     try {
-      await llm.explain(current, selected ?? -1, (tok) =>
-        setAiText((t) => t + tok)
-      );
+      await llm.explain(current, selected ?? -1, (tok) => {
+        if (aiReqRef.current !== reqId) return; // stale stream from a prior question
+        setAiText((t) => t + tok);
+      });
     } catch (e: any) {
-      setAiError(e?.message ?? 'AI is unavailable.');
+      if (aiReqRef.current === reqId) setAiError(e?.message ?? 'AI is unavailable.');
     } finally {
-      setAiLoading(false);
+      if (aiReqRef.current === reqId) setAiLoading(false);
     }
   }, [current, selected, llm]);
 
@@ -117,8 +141,6 @@ export default function QuizScreen({ route, navigation }: Props) {
       setIndex((i) => i + 1);
       setSelected(null);
       setRevealed(false);
-      setAiText('');
-      setAiError(null);
       return;
     }
     // Mastery drill: keep going until the component is mastered (or bank dry).
@@ -142,7 +164,6 @@ export default function QuizScreen({ route, navigation }: Props) {
           setIndex((i) => i + 1);
           setSelected(null);
           setRevealed(false);
-          setAiText('');
           return;
         }
       }
@@ -248,11 +269,19 @@ export default function QuizScreen({ route, navigation }: Props) {
       )}
 
       {!revealed ? (
-        <AppButton
-          title="Submit answer"
-          onPress={submit}
-          disabled={selected == null}
-        />
+        <>
+          <AppButton
+            title="Submit answer"
+            onPress={submit}
+            disabled={selected == null}
+          />
+          <AppButton
+            title="I don't know"
+            variant="ghost"
+            onPress={dontKnow}
+            style={{ marginTop: spacing.sm }}
+          />
+        </>
       ) : (
         <AppButton
           title={index >= questions.length - 1 && !config.masteryDrill ? 'See results' : 'Next question'}
