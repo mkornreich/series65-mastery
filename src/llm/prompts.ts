@@ -151,6 +151,39 @@ export function extractJson(text: string): any | null {
 
 const DIFFS = ['easy', 'medium', 'hard'];
 
+const normLabel = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+/** Snap a model-authored subtopic label to a REAL curriculum subtopic so that
+ *  invented/miscased labels can't inflate per-component coverage (which gates
+ *  "mastered"). Falls back to the component's first real subtopic. */
+function snapSubtopic(raw: unknown, component: Component): string {
+  const subs = component.subtopics;
+  const fallback = subs[0] || component.title;
+  if (typeof raw !== 'string' || !raw.trim()) return fallback;
+  const r = normLabel(raw);
+  const exact = subs.find((s) => normLabel(s) === r);
+  if (exact) return exact;
+  const contained = subs.find((s) => {
+    const n = normLabel(s);
+    return n.includes(r) || r.includes(n);
+  });
+  if (contained) return contained;
+  const words = new Set(r.split(' ').filter((w) => w.length > 3));
+  let best = fallback;
+  let bestScore = 0;
+  for (const s of subs) {
+    const score = normLabel(s)
+      .split(' ')
+      .filter((w) => w.length > 3 && words.has(w)).length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = s;
+    }
+  }
+  return best;
+}
+
 /** Validate + coerce a raw AI question into our Question shape (or null). */
 export function coerceQuestion(
   raw: any,
@@ -167,10 +200,7 @@ export function coerceQuestion(
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3)
     return null;
   const difficulty = DIFFS.includes(raw.difficulty) ? raw.difficulty : 'medium';
-  const subtopic =
-    typeof raw.subtopic === 'string' && raw.subtopic
-      ? raw.subtopic
-      : component.subtopics[0] || component.title;
+  const subtopic = snapSubtopic(raw.subtopic, component);
   return {
     id: `ai-${component.id}-${Date.now()}-${idx}`,
     subjectId: component.subjectId,
