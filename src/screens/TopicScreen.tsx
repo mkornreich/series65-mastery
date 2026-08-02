@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useMemo, useState } from 'react';
-import { Text, StyleSheet, View, Alert } from 'react-native';
+import React, { useLayoutEffect, useMemo } from 'react';
+import { Text, StyleSheet, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Pill, Body, Divider } from '../components/ui';
@@ -42,7 +42,6 @@ export default function TopicScreen({ route, navigation }: Props) {
   const subject = component ? getSubject(component.subjectId) : undefined;
   const mastery = useStore((s) => s.progress.mastery)[componentId];
   const llm = useLLM();
-  const [generating, setGenerating] = useState(false);
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -64,37 +63,10 @@ export default function TopicScreen({ route, navigation }: Props) {
   const coverage = Math.round(componentCoverage(mastery) * 100);
   const bankCount = bankByComponent(componentId).length;
 
-  const generateAI = async () => {
-    setGenerating(true);
-    try {
-      // Seed the session with a small first batch; QuizScreen keeps generating
-      // more in the background so the practice never runs out.
-      const qs = await llm.generateQuestions(component, 3);
-      if (!qs.length) {
-        Alert.alert(
-          'Could not generate questions',
-          'The on-device model did not return usable questions. Try again or use bank practice.'
-        );
-        return;
-      }
-      navigation.navigate('Quiz', {
-        config: {
-          title: `AI practice: ${component.title}`,
-          mode: 'ai',
-          componentId,
-          aiInfinite: true,
-          inlineQuestions: qs,
-        },
-      });
-    } catch (e: any) {
-      Alert.alert(
-        'AI unavailable',
-        e?.message ?? 'Set up an on-device model in Settings to generate questions.'
-      );
-    } finally {
-      setGenerating(false);
-    }
-  };
+  // Practice runs endlessly when an on-device model is set: it serves the curated
+  // bank first, then the model keeps generating fresh questions. Both count toward
+  // mastery. Without a model it's a normal finite bank quiz.
+  const aiCapable = llm.available && !!llm.activeModelId;
 
   return (
     <Screen>
@@ -120,7 +92,7 @@ export default function TopicScreen({ route, navigation }: Props) {
       </View>
 
       <AppButton
-        title={`Practice (${Math.min(10, bankCount)} questions)`}
+        title={aiCapable ? 'Practice (endless)' : `Practice (${Math.min(10, bankCount)} questions)`}
         icon="✎"
         onPress={() =>
           navigation.navigate('Quiz', {
@@ -128,7 +100,8 @@ export default function TopicScreen({ route, navigation }: Props) {
               title: component.title,
               mode: 'component',
               componentId,
-              count: 10,
+              count: aiCapable ? Math.max(bankCount, 1) : 10,
+              aiInfinite: aiCapable,
             },
           })
         }
@@ -151,24 +124,12 @@ export default function TopicScreen({ route, navigation }: Props) {
         }
       />
       <View style={{ height: spacing.sm }} />
-      <View style={styles.aiRow}>
-        <AppButton
-          title="Ask AI tutor"
-          icon="💬"
-          variant="ghost"
-          style={{ flex: 1 }}
-          onPress={() => navigation.navigate('Tutor', { topicTitle: component.title, componentId })}
-        />
-        <View style={{ width: spacing.sm }} />
-        <AppButton
-          title="Endless AI questions"
-          icon="🤖"
-          variant="ghost"
-          style={{ flex: 1 }}
-          loading={generating}
-          onPress={generateAI}
-        />
-      </View>
+      <AppButton
+        title="Ask AI tutor"
+        icon="💬"
+        variant="ghost"
+        onPress={() => navigation.navigate('Tutor', { topicTitle: component.title, componentId })}
+      />
 
       {notes ? (
         <Card style={{ marginTop: spacing.lg }}>

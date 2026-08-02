@@ -86,13 +86,13 @@ export const useStore = create<StoreState>()(
 
       recordAnswer: (q, chosenIndex) =>
         set((s) => {
-          // AI-generated questions are ephemeral practice: their ids never exist
-          // in the bank, so persisting them would poison spaced-repetition, the
-          // review/missed queues, and mastery (which would certify "mastered" off
-          // unvalidated model content). Skip all persistent progress for them.
-          if (q.source === 'ai') return s;
           const now = Date.now();
           const correct = chosenIndex === q.answerIndex;
+          // AI-generated questions DO count toward per-component mastery, streak,
+          // and totals — but NOT the spaced-repetition scheduler or the missed
+          // queue, which are keyed by bank ids that an ai-<…> id can never resolve
+          // (that would leave dead entries the review screen can't open).
+          const isAi = q.source === 'ai';
 
           const mastery = { ...s.progress.mastery };
           mastery[q.componentId] = updateComponentMastery(
@@ -102,14 +102,14 @@ export const useStore = create<StoreState>()(
             now
           );
 
-          const sr = { ...s.progress.sr };
-          sr[q.id] = scheduleSR(sr[q.id], q.id, gradeFor(correct), now);
-
+          let sr = s.progress.sr;
           let missed = s.progress.missed;
-          if (correct) {
-            missed = missed.filter((id) => id !== q.id);
-          } else {
-            missed = [q.id, ...missed.filter((id) => id !== q.id)].slice(0, 300);
+          if (!isAi) {
+            sr = { ...s.progress.sr };
+            sr[q.id] = scheduleSR(sr[q.id], q.id, gradeFor(correct), now);
+            missed = correct
+              ? missed.filter((id) => id !== q.id)
+              : [q.id, ...missed.filter((id) => id !== q.id)].slice(0, 300);
           }
 
           const day = dayString(now);

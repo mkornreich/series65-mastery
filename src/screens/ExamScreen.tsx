@@ -4,6 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
+import { CalculatorModal } from '../components/Calculator';
 import { spacing, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { generateExam } from '../exam/generator';
@@ -36,6 +37,7 @@ export default function ExamScreen({ navigation }: Props) {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showPalette, setShowPalette] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(EXAM_SPEC.timeLimitMinutes * 60);
 
   const current = questions[index];
@@ -81,8 +83,13 @@ export default function ExamScreen({ navigation }: Props) {
         </Text>
       ),
       headerBackVisible: false,
+      headerRight: () => (
+        <Pressable onPress={() => setShowCalc(true)} hitSlop={12} style={{ paddingHorizontal: spacing.sm }}>
+          <Text style={{ fontSize: 20 }}>🧮</Text>
+        </Pressable>
+      ),
     });
-  }, [navigation, secondsLeft]);
+  }, [navigation, secondsLeft, colors]);
 
   // Confirm before leaving via gesture/back.
   useEffect(() => {
@@ -128,6 +135,14 @@ export default function ExamScreen({ navigation }: Props) {
         <View style={{ width: `${(answeredCount / questions.length) * 100}%`, height: 6, backgroundColor: colors.accent, borderRadius: 6 }} />
       </View>
 
+      {/* Submit sits at the top, away from the Prev/Next flow, so it isn't tapped by accident. */}
+      <AppButton
+        title="Submit exam"
+        variant="secondary"
+        style={{ marginTop: spacing.md }}
+        onPress={confirmSubmit}
+      />
+
       <Card style={{ marginTop: spacing.md }}>
         {current && (
           <QuestionBlock
@@ -150,16 +165,16 @@ export default function ExamScreen({ navigation }: Props) {
         <View style={{ width: spacing.sm }} />
         <AppButton
           title="Grid"
-          variant="ghost"
+          variant="secondary"
           style={{ flex: 1 }}
           onPress={() => setShowPalette((s) => !s)}
         />
         <View style={{ width: spacing.sm }} />
         <AppButton
           title="Next →"
-          variant="primary"
+          variant="secondary"
           disabled={index >= questions.length - 1}
-          style={{ flex: 1.5 }}
+          style={{ flex: 1 }}
           onPress={() => setIndex((i) => Math.min(questions.length - 1, i + 1))}
         />
       </View>
@@ -192,11 +207,7 @@ export default function ExamScreen({ navigation }: Props) {
         </Card>
       )}
 
-      <AppButton
-        title="Submit exam"
-        style={{ marginTop: spacing.lg }}
-        onPress={confirmSubmit}
-      />
+      <CalculatorModal visible={showCalc} onClose={() => setShowCalc(false)} />
     </Screen>
   );
 }

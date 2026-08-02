@@ -1,11 +1,12 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList, AnswerRecord } from '../navigation/types';
 import { Question } from '../types';
 import { Screen, Card, AppButton, Body } from '../components/ui';
 import { QuestionBlock } from '../components/QuestionBlock';
 import { Markdown } from '../components/markdown';
+import { CalculatorModal } from '../components/Calculator';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
@@ -78,6 +79,17 @@ export default function QuizScreen({ route, navigation }: Props) {
   const [aiError, setAiError] = useState<string | null>(null);
   const [generatingMore, setGeneratingMore] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [showCalc, setShowCalc] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={() => setShowCalc(true)} hitSlop={12} style={{ paddingHorizontal: spacing.sm }}>
+          <Text style={{ fontSize: 20 }}>🧮</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
 
   const current = questions[index];
   const isFlagged = current ? flagged.includes(current.id) : false;
@@ -277,7 +289,7 @@ export default function QuizScreen({ route, navigation }: Props) {
     <Screen>
       {config.aiInfinite ? (
         <View style={styles.aiInfHeader}>
-          <Text style={styles.aiInfLabel}>🤖 Endless AI practice</Text>
+          <Text style={styles.aiInfLabel}>♾️  Endless practice</Text>
           <Text style={styles.aiInfCount}>
             Question {index + 1}
             {generatingMore ? '  ·  generating…' : ''}
@@ -396,6 +408,8 @@ export default function QuizScreen({ route, navigation }: Props) {
           onPress={next}
         />
       )}
+
+      <CalculatorModal visible={showCalc} onClose={() => setShowCalc(false)} />
     </Screen>
   );
 }
