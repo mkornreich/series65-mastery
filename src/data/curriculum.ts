@@ -405,7 +405,7 @@ export const SUBJECTS: Subject[] = [
   {
     id: "laws",
     code: 4,
-    title: "Laws, Regulations, and Prohibition on Unethical Business Practices",
+    title: "Laws, Regulations, and Guidelines Including Prohibition on Unethical Business Practices",
     weightPct: 30,
     scoredQuestions: 39,
     components: [
