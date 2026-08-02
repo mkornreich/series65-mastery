@@ -51,11 +51,14 @@ export function buildTutorMessages(
   ];
 }
 
-/** Ask the model to author fresh practice questions for a component as JSON. */
+/** Ask the model to author fresh practice questions for a component as JSON.
+ *  `avoidStems` lists recently-asked question stems the model must not repeat —
+ *  used when generating an endless stream so batches stay distinct. */
 export function buildGenerateMessages(
   component: Component,
   count: number,
-  examples: Question[]
+  examples: Question[],
+  avoidStems: string[] = []
 ): ChatMessage[] {
   const exampleBlock = examples
     .slice(0, 2)
@@ -70,6 +73,11 @@ export function buildGenerateMessages(
     .join(',\n');
 
   const subtopics = component.subtopics.map((s) => `- ${s}`).join('\n');
+  const avoidBlock = avoidStems.length
+    ? `Do NOT repeat or paraphrase these already-asked questions:\n` +
+      avoidStems.slice(-12).map((s) => `- ${s}`).join('\n') +
+      `\n\n`
+    : '';
 
   return [
     {
@@ -81,14 +89,16 @@ export function buildGenerateMessages(
     {
       role: 'user',
       content:
-        `Write ${count} original Series 65 multiple-choice questions for the topic ` +
+        `Write ${count} NEW, original Series 65 multiple-choice questions for the topic ` +
         `"${component.title}". Cover these subtopics:\n${subtopics}\n\n` +
         `Return ONLY a JSON object of the form {"questions":[ ... ]} where each item is:\n` +
         `{"stem": string, "choices": [4 strings], "answerIndex": 0-3, "explanation": string, ` +
         `"subtopic": string, "difficulty": "easy"|"medium"|"hard"}\n\n` +
-        (exampleBlock ? `Example items:\n${exampleBlock}\n\n` : '') +
+        (exampleBlock ? `Example items (format only — do NOT copy their content):\n${exampleBlock}\n\n` : '') +
+        avoidBlock +
         `Rules: exactly 4 choices; one unambiguous best answer; plausible distractors; ` +
-        `no "all/none of the above"; keep each stem self-contained. Output JSON only, no prose.`,
+        `no "all/none of the above"; vary the subtopic and difficulty across the set; ` +
+        `keep each stem self-contained and DISTINCT from any listed above. Output JSON only, no prose.`,
     },
   ];
 }

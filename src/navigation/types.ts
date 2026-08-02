@@ -22,6 +22,8 @@ export interface QuizConfig {
   inlineQuestions?: Question[];
   /** Keep serving questions until the component is mastered. */
   masteryDrill?: boolean;
+  /** Endlessly generate fresh AI questions for the component as you progress. */
+  aiInfinite?: boolean;
 }
 
 export interface AnswerRecord {

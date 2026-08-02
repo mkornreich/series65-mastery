@@ -84,7 +84,11 @@ interface LLMContextValue {
     message: string,
     onToken?: (t: string) => void
   ) => Promise<string>;
-  generateQuestions: (component: Component, count: number) => Promise<Question[]>;
+  generateQuestions: (
+    component: Component,
+    count: number,
+    avoidStems?: string[]
+  ) => Promise<Question[]>;
   stop: () => Promise<void>;
 }
 
@@ -240,30 +244,44 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     }
   }, [available, activeModelId, doLoad]);
 
+  // Serialize all model calls. The on-device engine handles one request at a
+  // time, so background question prefetch must not collide with an explanation
+  // or tutor turn — later callers queue behind the in-flight one.
+  const llmLock = useRef<Promise<unknown>>(Promise.resolve());
+  const runExclusive = useCallback(<T,>(fn: () => Promise<T>): Promise<T> => {
+    const run = llmLock.current.then(fn, fn);
+    llmLock.current = run.then(
+      () => undefined,
+      () => undefined
+    );
+    return run;
+  }, []);
+
   const runText = useCallback(
-    async (messages: ChatMessage[], onToken?: (t: string) => void) => {
-      await ensureReady();
-      setStatus('generating');
-      try {
-        let out: string;
-        const kind = kindOf(activeModelId);
-        if (kind === 'aicore') {
-          out = await geminiComplete(messages, genParams.temperature, genParams.maxTokens);
-          if (onToken && out) onToken(out);
-        } else if (kind === 'litertlm') {
-          out = await litertComplete(messages, genParams.temperature, genParams.topP);
-          if (onToken && out) onToken(out);
-        } else {
-          out = await engine.complete(messages, genParams, onToken);
+    (messages: ChatMessage[], onToken?: (t: string) => void) =>
+      runExclusive(async () => {
+        await ensureReady();
+        setStatus('generating');
+        try {
+          let out: string;
+          const kind = kindOf(activeModelId);
+          if (kind === 'aicore') {
+            out = await geminiComplete(messages, genParams.temperature, genParams.maxTokens);
+            if (onToken && out) onToken(out);
+          } else if (kind === 'litertlm') {
+            out = await litertComplete(messages, genParams.temperature, genParams.topP);
+            if (onToken && out) onToken(out);
+          } else {
+            out = await engine.complete(messages, genParams, onToken);
+          }
+          setStatus('ready');
+          return out;
+        } catch (e: any) {
+          setStatus('ready');
+          throw e;
         }
-        setStatus('ready');
-        return out;
-      } catch (e: any) {
-        setStatus('ready');
-        throw e;
-      }
-    },
-    [ensureReady, genParams, activeModelId]
+      }),
+    [ensureReady, genParams, activeModelId, runExclusive]
   );
 
   const explain = useCallback(
@@ -283,30 +301,31 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   );
 
   const generateQuestions = useCallback(
-    async (component: Component, count: number) => {
-      await ensureReady();
-      setStatus('generating');
-      try {
-        const examples = bankByComponent(component.id);
-        const messages = buildGenerateMessages(component, count, examples);
-        const maxTokens = Math.max(768, count * 240);
-        const kind = kindOf(activeModelId);
-        let text: string;
-        if (kind === 'aicore') {
-          text = await geminiComplete(messages, genParams.temperature, maxTokens);
-        } else if (kind === 'litertlm') {
-          text = await litertComplete(messages, genParams.temperature, genParams.topP);
-        } else {
-          text = await engine.completeJson(messages, { ...genParams, maxTokens });
+    (component: Component, count: number, avoidStems: string[] = []) =>
+      runExclusive(async () => {
+        await ensureReady();
+        setStatus('generating');
+        try {
+          const examples = bankByComponent(component.id);
+          const messages = buildGenerateMessages(component, count, examples, avoidStems);
+          const maxTokens = Math.max(768, count * 240);
+          const kind = kindOf(activeModelId);
+          let text: string;
+          if (kind === 'aicore') {
+            text = await geminiComplete(messages, genParams.temperature, maxTokens);
+          } else if (kind === 'litertlm') {
+            text = await litertComplete(messages, genParams.temperature, genParams.topP);
+          } else {
+            text = await engine.completeJson(messages, { ...genParams, maxTokens });
+          }
+          setStatus('ready');
+          return parseGeneratedQuestions(text, component);
+        } catch (e: any) {
+          setStatus('ready');
+          throw e;
         }
-        setStatus('ready');
-        return parseGeneratedQuestions(text, component);
-      } catch (e: any) {
-        setStatus('ready');
-        throw e;
-      }
-    },
-    [ensureReady, genParams, activeModelId]
+      }),
+    [ensureReady, genParams, activeModelId, runExclusive]
   );
 
   const stop = useCallback(async () => {

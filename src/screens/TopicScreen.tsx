@@ -67,7 +67,9 @@ export default function TopicScreen({ route, navigation }: Props) {
   const generateAI = async () => {
     setGenerating(true);
     try {
-      const qs = await llm.generateQuestions(component, 5);
+      // Seed the session with a small first batch; QuizScreen keeps generating
+      // more in the background so the practice never runs out.
+      const qs = await llm.generateQuestions(component, 3);
       if (!qs.length) {
         Alert.alert(
           'Could not generate questions',
@@ -79,6 +81,8 @@ export default function TopicScreen({ route, navigation }: Props) {
         config: {
           title: `AI practice: ${component.title}`,
           mode: 'ai',
+          componentId,
+          aiInfinite: true,
           inlineQuestions: qs,
         },
       });
@@ -157,7 +161,7 @@ export default function TopicScreen({ route, navigation }: Props) {
         />
         <View style={{ width: spacing.sm }} />
         <AppButton
-          title="Generate AI questions"
+          title="Endless AI questions"
           icon="🤖"
           variant="ghost"
           style={{ flex: 1 }}

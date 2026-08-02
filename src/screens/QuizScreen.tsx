@@ -22,6 +22,11 @@ import { COMPONENT_BY_ID } from '../data/curriculum';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
+// Endless AI practice: prefetch a fresh batch when this many questions remain.
+const AI_PREFETCH_AHEAD = 2;
+const AI_BATCH = 3;
+const normStem = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+
 function resolveQuestions(config: Props['route']['params']['config']): Question[] {
   const st = useStore.getState().progress;
   const count = config.count ?? 10;
@@ -71,9 +76,21 @@ export default function QuizScreen({ route, navigation }: Props) {
   const [aiText, setAiText] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [generatingMore, setGeneratingMore] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const current = questions[index];
   const isFlagged = current ? flagged.includes(current.id) : false;
+
+  // Endless AI practice: the component to keep generating questions for.
+  const aiComp =
+    config.aiInfinite && config.componentId ? COMPONENT_BY_ID[config.componentId] : undefined;
+  const generatingRef = useRef(false);
+  // Normalized stems already served, to drop repeated generations (lazy-init once).
+  const seenStemsRef = useRef<Set<string> | null>(null);
+  if (seenStemsRef.current === null) {
+    seenStemsRef.current = new Set(questions.map((q) => normStem(q.stem)));
+  }
 
   // Monotonic id for the in-flight AI explanation. Bumping it invalidates any
   // stream still arriving from a previous question so its tokens are dropped.
@@ -87,6 +104,40 @@ export default function QuizScreen({ route, navigation }: Props) {
     setAiLoading(false);
     setAiError(null);
   }, [current?.id]);
+
+  // Endless AI practice: prefetch the next batch in the background as the user
+  // nears the end of what's loaded, deduping repeats so it never runs dry.
+  useEffect(() => {
+    if (!aiComp || !current) return;
+    const remaining = questions.length - 1 - index;
+    if (remaining > AI_PREFETCH_AHEAD) return;
+    if (generatingRef.current || genError) return; // one at a time; wait on a surfaced error
+    generatingRef.current = true;
+    setGeneratingMore(true);
+    const avoid = questions.slice(-12).map((q) => q.stem);
+    llm
+      .generateQuestions(aiComp, AI_BATCH, avoid)
+      .then((qs) => {
+        const seen = seenStemsRef.current!;
+        const fresh = qs.filter((q) => {
+          const key = normStem(q.stem);
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        if (fresh.length) setQuestions((prev) => [...prev, ...fresh]);
+        else setGenError('The model kept repeating itself.');
+      })
+      .catch((e: any) =>
+        setGenError(e?.message ?? 'Could not generate more questions.')
+      )
+      .finally(() => {
+        generatingRef.current = false;
+        setGeneratingMore(false);
+      });
+  }, [aiComp, current, index, questions, genError, llm]);
+
+  const retryGenerate = useCallback(() => setGenError(null), []);
 
   const submit = useCallback(() => {
     if (selected == null || !current) return;
@@ -134,6 +185,8 @@ export default function QuizScreen({ route, navigation }: Props) {
     [navigation, config]
   );
 
+  const finishSession = useCallback(() => finish(records), [finish, records]);
+
   const next = useCallback(() => {
     const finalRecords = records;
     const atEnd = index >= questions.length - 1;
@@ -143,6 +196,9 @@ export default function QuizScreen({ route, navigation }: Props) {
       setRevealed(false);
       return;
     }
+    // Endless AI practice never auto-finishes; the prefetch appends more and the
+    // user ends it with "Finish session".
+    if (config.aiInfinite) return;
     // Mastery drill: keep going until the component is mastered (or bank dry).
     if (config.masteryDrill && config.componentId) {
       const mastery = useStore.getState().progress.mastery[config.componentId];
@@ -198,16 +254,26 @@ export default function QuizScreen({ route, navigation }: Props) {
 
   return (
     <Screen>
-      <View style={styles.progressTrack}>
-        <View
-          style={{
-            width: `${((index + (revealed ? 1 : 0)) / questions.length) * 100}%`,
-            height: 6,
-            borderRadius: 6,
-            backgroundColor: colors.primary,
-          }}
-        />
-      </View>
+      {config.aiInfinite ? (
+        <View style={styles.aiInfHeader}>
+          <Text style={styles.aiInfLabel}>🤖 Endless AI practice</Text>
+          <Text style={styles.aiInfCount}>
+            Question {index + 1}
+            {generatingMore ? '  ·  generating…' : ''}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.progressTrack}>
+          <View
+            style={{
+              width: `${((index + (revealed ? 1 : 0)) / questions.length) * 100}%`,
+              height: 6,
+              borderRadius: 6,
+              backgroundColor: colors.primary,
+            }}
+          />
+        </View>
+      )}
 
       <Card>
         <View style={styles.topRow}>
@@ -226,7 +292,7 @@ export default function QuizScreen({ route, navigation }: Props) {
           revealed={revealed}
           onSelect={setSelected}
           index={index}
-          total={questions.length}
+          total={config.aiInfinite ? undefined : questions.length}
         />
       </Card>
 
@@ -282,6 +348,23 @@ export default function QuizScreen({ route, navigation }: Props) {
             style={{ marginTop: spacing.sm }}
           />
         </>
+      ) : config.aiInfinite ? (
+        <>
+          {index < questions.length - 1 ? (
+            <AppButton title="Next question" onPress={next} />
+          ) : genError ? (
+            <AppButton title="↻ Generate more" onPress={retryGenerate} />
+          ) : (
+            <AppButton title="Generating more…" loading disabled />
+          )}
+          {genError && <Text style={styles.aiError}>{genError}</Text>}
+          <AppButton
+            title="Finish session"
+            variant="ghost"
+            onPress={finishSession}
+            style={{ marginTop: spacing.sm }}
+          />
+        </>
       ) : (
         <AppButton
           title={index >= questions.length - 1 && !config.masteryDrill ? 'See results' : 'Next question'}
@@ -301,6 +384,14 @@ const makeStyles = (colors: ThemeColors) =>
     marginBottom: spacing.md,
     overflow: 'hidden',
   },
+  aiInfHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  aiInfLabel: { color: colors.accent, fontSize: font.small, fontWeight: '800' },
+  aiInfCount: { color: colors.textMuted, fontSize: font.small, fontWeight: '600' },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
