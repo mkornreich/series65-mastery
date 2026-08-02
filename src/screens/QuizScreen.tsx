@@ -17,9 +17,11 @@ import {
   selectForSubject,
   selectReview,
   questionsByIds,
+  bankByComponent,
 } from '../mastery/selection';
-import { isMastered } from '../mastery/engine';
-import { COMPONENT_BY_ID } from '../data/curriculum';
+import { isMastered, masteryScore } from '../mastery/engine';
+import { COMPONENT_BY_ID, getSubject } from '../data/curriculum';
+import { Component } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
@@ -94,9 +96,24 @@ export default function QuizScreen({ route, navigation }: Props) {
   const current = questions[index];
   const isFlagged = current ? flagged.includes(current.id) : false;
 
-  // Endless AI practice: the component to keep generating questions for.
-  const aiComp =
-    config.aiInfinite && config.componentId ? COMPONENT_BY_ID[config.componentId] : undefined;
+  // Endless AI practice. In component mode we always generate for that one
+  // component; in section (subject) mode we rotate through the section's topics
+  // so a "Practice (endless)" on a whole section covers all of it evenly.
+  const aiInfinite = !!config.aiInfinite;
+  const genRotationRef = useRef(0);
+  const pickGenComponent = useCallback((): Component | undefined => {
+    if (config.componentId) return COMPONENT_BY_ID[config.componentId];
+    if (config.subjectId) {
+      const comps = (getSubject(config.subjectId)?.components ?? []).filter(
+        (c) => bankByComponent(c.id).length > 0
+      );
+      if (!comps.length) return undefined;
+      const c = comps[genRotationRef.current % comps.length];
+      genRotationRef.current += 1;
+      return c;
+    }
+    return undefined;
+  }, [config.componentId, config.subjectId]);
   const generatingRef = useRef(false);
   // Normalized stems already served, to drop repeated generations (lazy-init once).
   const seenStemsRef = useRef<Set<string> | null>(null);
@@ -137,15 +154,17 @@ export default function QuizScreen({ route, navigation }: Props) {
   // Endless AI practice: prefetch the next batch in the background as the user
   // nears the end of what's loaded, deduping repeats so it never runs dry.
   useEffect(() => {
-    if (!aiComp || !current) return;
+    if (!aiInfinite || !current) return;
     const remaining = questions.length - 1 - index;
     if (remaining > AI_PREFETCH_AHEAD) return;
     if (generatingRef.current || genError) return; // one at a time; wait on a surfaced error
+    const target = pickGenComponent();
+    if (!target) return;
     generatingRef.current = true;
     setGeneratingMore(true);
     const avoid = questions.slice(-12).map((q) => q.stem);
     llm
-      .generateQuestions(aiComp, AI_BATCH, avoid)
+      .generateQuestions(target, AI_BATCH, avoid)
       .then((qs) => {
         if (!mountedRef.current) return;
         const seen = seenStemsRef.current!;
@@ -165,7 +184,7 @@ export default function QuizScreen({ route, navigation }: Props) {
         generatingRef.current = false;
         if (mountedRef.current) setGeneratingMore(false);
       });
-  }, [aiComp, current, index, questions, genError, llm]);
+  }, [aiInfinite, pickGenComponent, current, index, questions, genError, llm]);
 
   const retryGenerate = useCallback(() => setGenError(null), []);
 
@@ -232,28 +251,48 @@ export default function QuizScreen({ route, navigation }: Props) {
     // Endless AI practice never auto-finishes; the prefetch appends more and the
     // user ends it with "Finish session".
     if (config.aiInfinite) return;
-    // Mastery drill: keep going until the component is mastered (or bank dry).
-    if (config.masteryDrill && config.componentId) {
-      const mastery = useStore.getState().progress.mastery[config.componentId];
-      if (!isMastered(mastery)) {
-        const st = useStore.getState().progress;
-        const more = selectForComponent(
-          config.componentId,
-          st.sr,
-          st.missed,
-          5
-        ).filter((q) => !servedIds.has(q.id));
-        if (more.length) {
-          setQuestions((qs) => [...qs, ...more]);
-          setServedIds((s) => {
-            const n = new Set(s);
-            more.forEach((q) => n.add(q.id));
-            return n;
-          });
-          setIndex((i) => i + 1);
-          setSelected(null);
-          setRevealed(false);
-          return;
+    // Mastery drill: keep serving questions until mastered (or bank dry).
+    if (config.masteryDrill) {
+      const st = useStore.getState().progress;
+      const appendAndAdvance = (more: Question[]) => {
+        setQuestions((qs) => [...qs, ...more]);
+        setServedIds((s) => {
+          const n = new Set(s);
+          more.forEach((q) => n.add(q.id));
+          return n;
+        });
+        setIndex((i) => i + 1);
+        setSelected(null);
+        setRevealed(false);
+      };
+      if (config.componentId) {
+        // One topic: drill until that topic is mastered.
+        if (!isMastered(st.mastery[config.componentId])) {
+          const more = selectForComponent(config.componentId, st.sr, st.missed, 5).filter(
+            (q) => !servedIds.has(q.id)
+          );
+          if (more.length) {
+            appendAndAdvance(more);
+            return;
+          }
+        }
+      } else if (config.subjectId) {
+        // Whole section: drill the weakest not-yet-mastered topic, moving on as
+        // each is mastered, until every topic in the section is mastered.
+        const comps = (getSubject(config.subjectId)?.components ?? []).filter(
+          (c) => bankByComponent(c.id).length > 0
+        );
+        const unmastered = comps
+          .filter((c) => !isMastered(st.mastery[c.id]))
+          .sort((a, b) => masteryScore(st.mastery[a.id]) - masteryScore(st.mastery[b.id]));
+        for (const c of unmastered) {
+          const more = selectForComponent(c.id, st.sr, st.missed, 5).filter(
+            (q) => !servedIds.has(q.id)
+          );
+          if (more.length) {
+            appendAndAdvance(more);
+            return;
+          }
         }
       }
     }

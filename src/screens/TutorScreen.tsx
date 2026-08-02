@@ -1,4 +1,11 @@
-import React, { useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, {
+  useLayoutEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
 import {
   View,
   Text,
@@ -6,9 +13,10 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
+  Animated,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
@@ -37,20 +45,73 @@ function suggestionsFor(topic?: string): string[] {
   ];
 }
 
+/** Three pulsing dots so it's obvious the on-device model is working. */
+function ThinkingDots({ color }: { color: string }) {
+  const dots = useRef([0, 1, 2].map(() => new Animated.Value(0.3))).current;
+  useEffect(() => {
+    const anims = dots.map((v, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(v, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(v, { toValue: 0.3, duration: 300, useNativeDriver: true }),
+          Animated.delay((2 - i) * 160),
+        ])
+      )
+    );
+    anims.forEach((a) => a.start());
+    return () => anims.forEach((a) => a.stop());
+  }, [dots]);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {dots.map((v, i) => (
+        <Animated.View
+          key={i}
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: 4,
+            marginRight: 5,
+            backgroundColor: color,
+            opacity: v,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function TutorScreen({ route, navigation }: Props) {
   const { topicTitle } = route.params ?? {};
   const SUGGESTIONS = suggestionsFor(topicTitle);
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const llm = useLLM();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  // The app is edge-to-edge, so the soft keyboard draws over the content instead
+  // of resizing the window. Track its height and lift the whole column above it,
+  // keeping every message and the input box visible while typing.
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKbHeight(e.endCoordinates?.height ?? 0);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
   useLayoutEffect(() => {
-    navigation.setOptions({ title: topicTitle ? 'AI Tutor' : 'AI Tutor' });
-  }, [navigation, topicTitle]);
+    navigation.setOptions({ title: 'AI Tutor' });
+  }, [navigation]);
 
   const send = useCallback(
     async (text: string) => {
@@ -92,12 +153,13 @@ export default function TutorScreen({ route, navigation }: Props) {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={90}
-    >
-      <ScrollView ref={scrollRef} style={styles.flex} contentContainerStyle={styles.content}>
+    <View style={[styles.flex, { paddingBottom: kbHeight }]}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.flex}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         {messages.length === 0 && (
           <View>
             <Text style={styles.hello}>
@@ -129,14 +191,25 @@ export default function TutorScreen({ route, navigation }: Props) {
               <Text style={styles.userText}>{m.content}</Text>
             ) : m.content ? (
               <Markdown source={m.content} baseSize={font.body} />
+            ) : sending ? (
+              // No tokens yet: make it obvious the on-device model is working.
+              <View style={styles.thinkingRow}>
+                <ThinkingDots color={colors.accent} />
+                <Text style={styles.thinkingText}>Thinking…</Text>
+              </View>
             ) : (
-              <Text style={styles.aiText}>{sending ? '…' : ''}</Text>
+              <Text style={styles.aiText}>…</Text>
             )}
           </View>
         ))}
       </ScrollView>
 
-      <View style={styles.inputRow}>
+      <View
+        style={[
+          styles.inputRow,
+          { paddingBottom: kbHeight ? spacing.sm : insets.bottom + spacing.sm },
+        ]}
+      >
         <TextInput
           style={styles.input}
           placeholder="Type your question…"
@@ -154,7 +227,7 @@ export default function TutorScreen({ route, navigation }: Props) {
           <Text style={styles.sendText}>➤</Text>
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -182,6 +255,8 @@ const makeStyles = (colors: ThemeColors) =>
   userText: { color: colors.onBright, fontSize: font.body, lineHeight: 21, fontWeight: '600' },
   aiText: { color: colors.text, fontSize: font.body, lineHeight: 22 },
   aiTag: { color: colors.accent, fontSize: font.tiny, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  thinkingRow: { flexDirection: 'row', alignItems: 'center' },
+  thinkingText: { color: colors.textMuted, fontSize: font.small, fontWeight: '600', marginLeft: 6 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

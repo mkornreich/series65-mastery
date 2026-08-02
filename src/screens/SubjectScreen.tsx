@@ -9,7 +9,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
-import { bankByComponent } from '../mastery/selection';
+import { bankByComponent, bankBySubject } from '../mastery/selection';
+import { useLLM } from '../llm/LLMProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Subject'>;
 
@@ -19,6 +20,11 @@ export default function SubjectScreen({ route, navigation }: Props) {
   const { subjectId } = route.params;
   const subject = getSubject(subjectId);
   const mastery = useStore((s) => s.progress.mastery);
+  const llm = useLLM();
+  // Practice runs endlessly across the whole section when an on-device model is
+  // set: it serves the section's curated bank first, then the model keeps
+  // generating fresh questions (rotating through the section's topics).
+  const aiCapable = llm.available && !!llm.activeModelId;
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: subject ? `Section ${subject.code}` : 'Section' });
@@ -40,7 +46,7 @@ export default function SubjectScreen({ route, navigation }: Props) {
       </Text>
 
       <AppButton
-        title="Practice this section"
+        title={aiCapable ? 'Practice (endless)' : 'Practice this section'}
         icon="✎"
         style={{ marginTop: spacing.md }}
         onPress={() =>
@@ -49,7 +55,25 @@ export default function SubjectScreen({ route, navigation }: Props) {
               title: subject.title,
               mode: 'subject',
               subjectId: subject.id,
-              count: 15,
+              count: aiCapable ? Math.max(bankBySubject(subject.id).length, 1) : 15,
+              aiInfinite: aiCapable,
+            },
+          })
+        }
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title="Mastery drill (until mastered)"
+        icon="🎯"
+        variant="secondary"
+        onPress={() =>
+          navigation.navigate('Quiz', {
+            config: {
+              title: `Mastery: ${subject.title}`,
+              mode: 'subject',
+              subjectId: subject.id,
+              count: 5,
+              masteryDrill: true,
             },
           })
         }
