@@ -139,6 +139,15 @@ export default function SettingsScreen() {
     ? colors.primary
     : colors.warn;
 
+  // Only surface generation/advanced controls that actually affect the selected
+  // model's engine. LiteRT-LM runs on the GPU automatically and caps output by
+  // context size, so it ignores "GPU layers" and "Max response length"; Gemini
+  // Nano has a fixed context, so it ignores "GPU layers" and "Context size".
+  const kind = llm.activeKind;
+  const showMaxTokens = kind === 'aicore' || kind === 'gguf';
+  const showGpuLayers = kind === 'gguf';
+  const showContext = kind === 'litertlm' || kind === 'gguf';
+
   return (
     <Screen topInset>
       <Text style={styles.h1}>Settings</Text>
@@ -235,52 +244,64 @@ export default function SettingsScreen() {
             />
           }
         />
-        <View style={styles.divider} />
-        <Row
-          label="Max response length"
-          desc="Tokens the model may generate per answer."
-          right={
-            <Stepper
-              value={settings.genParams.maxTokens}
-              onChange={(v) => setGenParams({ maxTokens: v })}
-              step={128}
-              min={128}
-              max={1536}
+        {showMaxTokens && (
+          <>
+            <View style={styles.divider} />
+            <Row
+              label="Max response length"
+              desc="Tokens the model may generate per answer."
+              right={
+                <Stepper
+                  value={settings.genParams.maxTokens}
+                  onChange={(v) => setGenParams({ maxTokens: v })}
+                  step={128}
+                  min={128}
+                  max={1536}
+                />
+              }
             />
-          }
-        />
+          </>
+        )}
       </Card>
 
-      <SectionHeader title="Advanced" />
-      <Card>
-        <Row
-          label="GPU layers"
-          desc="0 = CPU only (most compatible). Raise on capable devices for speed. (Downloaded models only.)"
-          right={
-            <Stepper
-              value={settings.nGpuLayers}
-              onChange={(v) => setSetting('nGpuLayers', v)}
-              step={8}
-              min={0}
-              max={99}
-            />
-          }
-        />
-        <View style={styles.divider} />
-        <Row
-          label="Context size"
-          desc="Tokens of context the model keeps. Larger uses more RAM."
-          right={
-            <Stepper
-              value={settings.nCtx}
-              onChange={(v) => setSetting('nCtx', v)}
-              step={512}
-              min={1024}
-              max={8192}
-            />
-          }
-        />
-      </Card>
+      {(showGpuLayers || showContext) && (
+        <>
+          <SectionHeader title="Advanced" />
+          <Card>
+            {showGpuLayers && (
+              <Row
+                label="GPU layers"
+                desc="0 = CPU only (most compatible). Raise on capable devices for speed."
+                right={
+                  <Stepper
+                    value={settings.nGpuLayers}
+                    onChange={(v) => setSetting('nGpuLayers', v)}
+                    step={8}
+                    min={0}
+                    max={99}
+                  />
+                }
+              />
+            )}
+            {showGpuLayers && showContext && <View style={styles.divider} />}
+            {showContext && (
+              <Row
+                label="Context size"
+                desc="Tokens of context the model keeps. Larger uses more RAM."
+                right={
+                  <Stepper
+                    value={settings.nCtx}
+                    onChange={(v) => setSetting('nCtx', v)}
+                    step={512}
+                    min={1024}
+                    max={8192}
+                  />
+                }
+              />
+            )}
+          </Card>
+        </>
+      )}
 
       <SectionHeader title="App" />
       <Card>
