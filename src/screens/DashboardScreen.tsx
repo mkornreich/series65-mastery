@@ -19,6 +19,8 @@ export default function DashboardScreen() {
   const navigation = useNavigation<Nav>();
   const mastery = useStore((s) => s.progress.mastery);
   const sr = useStore((s) => s.progress.sr);
+  const missed = useStore((s) => s.progress.missed);
+  const flagged = useStore((s) => s.progress.flagged);
   const totalAnswered = useStore((s) => s.progress.totalAnswered);
   const streak = useStore((s) => s.progress.studyStreakDays);
 
@@ -86,6 +88,35 @@ export default function DashboardScreen() {
           })
         }
       />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title={`Practice missed (${missed.length})`}
+        variant="secondary"
+        icon="✗"
+        disabled={!missed.length}
+        onPress={() =>
+          navigation.navigate('Quiz', {
+            config: { title: 'Missed questions', mode: 'missed', count: 30 },
+          })
+        }
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title={`Flagged questions (${flagged.length})`}
+        variant="secondary"
+        icon="★"
+        disabled={!flagged.length}
+        onPress={() =>
+          navigation.navigate('Quiz', {
+            config: { title: 'Flagged questions', mode: 'flagged' },
+          })
+        }
+      />
+
+      <Text style={styles.srNote}>
+        Spaced repetition resurfaces questions right before you’d forget them, so
+        mastery sticks.
+      </Text>
     </Screen>
   );
 }
@@ -100,4 +131,11 @@ const makeStyles = (colors: ThemeColors) =>
   readyBody: { fontSize: font.small, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
   passNote: { fontSize: font.small, fontWeight: '700', marginTop: spacing.sm },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  srNote: {
+    fontSize: font.small,
+    color: colors.textMuted,
+    lineHeight: 19,
+    marginTop: spacing.xl,
+    textAlign: 'center',
+  },
 });
