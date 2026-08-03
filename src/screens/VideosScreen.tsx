@@ -6,11 +6,12 @@ import {
   Image,
   Pressable,
   ScrollView,
-  Linking,
 } from 'react-native';
 import { Screen, Pill } from '../components/ui';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
+import { useStore } from '../store/useStore';
+import { openVideo } from '../util/openVideo';
 import {
   VIDEOS,
   VIDEO_TOPICS,
@@ -48,17 +49,14 @@ export default function VideosScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [filter, setFilter] = useState<Filter>('all');
+  const preferNewPipe = useStore((s) => s.settings.openVideosInNewPipe);
 
   const visible = useMemo(
     () => (filter === 'all' ? VIDEOS : VIDEOS.filter((v) => v.topic === filter)),
     [filter],
   );
 
-  const open = (v: Video) => {
-    Linking.openURL(videoUrl(v.id)).catch(() => {
-      /* No handler for the URL — nothing to do. */
-    });
-  };
+  const open = (v: Video) => openVideo(videoUrl(v.id), preferNewPipe);
 
   const chips: Filter[] = ['all', ...VIDEO_TOPICS.map((t) => t.id)];
 

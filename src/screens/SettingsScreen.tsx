@@ -9,6 +9,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore, ThemeMode } from '../store/useStore';
 import { useLLM, isLocalId, localFileName, localLitertModelInfo } from '../llm/LLMProvider';
 import { MODEL_BY_ID } from '../data/models';
+import { isNewPipeInstalled } from '../util/openVideo';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -109,6 +110,7 @@ export default function SettingsScreen() {
   const setSetting = useStore((s) => s.setSetting);
   const setGenParams = useStore((s) => s.setGenParams);
   const resetProgress = useStore((s) => s.resetProgress);
+  const newPipeInstalled = useMemo(() => isNewPipeInstalled(), []);
 
   // Imported LiteRT-LM models use "local:<file>" ids that aren't in MODEL_BY_ID,
   // so resolve those separately — otherwise Settings shows "No model selected"
@@ -147,6 +149,25 @@ export default function SettingsScreen() {
       <Card>
         <Row label="Theme" desc="Follow the system setting, or force light or dark." right={null as any} />
         <ThemeSelector />
+      </Card>
+
+      <SectionHeader title="Videos" />
+      <Card>
+        <Row
+          label="Open videos in NewPipe"
+          desc={
+            newPipeInstalled
+              ? 'Play Watch-tab videos in NewPipe instead of the browser or YouTube app.'
+              : 'When NewPipe is installed, play Watch-tab videos there instead of the browser.'
+          }
+          right={
+            <Switch
+              value={settings.openVideosInNewPipe}
+              onValueChange={(v) => setSetting('openVideosInNewPipe', v)}
+              trackColor={{ true: colors.primary }}
+            />
+          }
+        />
       </Card>
 
       <SectionHeader title="On-device AI" />

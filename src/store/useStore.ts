@@ -24,6 +24,8 @@ export interface Settings {
   aiExplanations: boolean;
   /** Load the active model automatically on app launch. */
   autoLoadModel: boolean;
+  /** Open Watch-tab videos in NewPipe when it's installed (else the browser). */
+  openVideosInNewPipe: boolean;
 }
 
 export interface ProgressState {
@@ -62,6 +64,9 @@ const DEFAULT_SETTINGS: Settings = {
   // Warm the on-device model (on the GPU when supported) as soon as the app
   // opens, so the first tutor/generation has no load latency.
   autoLoadModel: true,
+  // Prefer NewPipe for Watch-tab videos; falls back to the browser/YouTube app
+  // automatically when NewPipe isn't installed.
+  openVideosInNewPipe: true,
 };
 
 const EMPTY_PROGRESS: ProgressState = {
@@ -179,12 +184,21 @@ export const useStore = create<StoreState>()(
       name: 'series65-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ settings: s.settings, progress: s.progress }),
-      version: 1,
+      version: 2,
       // v1: default to loading the model (on the GPU) at launch. Flip existing
       // installs on once; users who later turn it off keep that choice.
+      // v2: default Watch-tab videos to opening in NewPipe (falls back to the
+      // browser automatically when NewPipe isn't installed).
       migrate: (persisted: any, version: number) => {
         if (version < 1 && persisted?.settings) {
           persisted.settings.autoLoadModel = true;
+        }
+        if (
+          version < 2 &&
+          persisted?.settings &&
+          persisted.settings.openVideosInNewPipe === undefined
+        ) {
+          persisted.settings.openVideosInNewPipe = true;
         }
         return persisted;
       },

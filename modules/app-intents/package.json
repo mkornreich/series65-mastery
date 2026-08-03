@@ -1,0 +1,7 @@
+{
+  "name": "app-intents",
+  "version": "0.1.0",
+  "description": "Open URLs in a specific installed app (package) via Android intents, as a local Expo module",
+  "main": "index.ts",
+  "private": true
+}
