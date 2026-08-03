@@ -69,6 +69,10 @@ export default function MathTopicScreen({ route, navigation }: Props) {
               title: `Mastery: ${topic.title}`,
               mode: 'component',
               componentId: topic.homeComponentId,
+              // Scope to THIS formula's questions — without it the drill served
+              // every calculation question in the home component (other formulas
+              // + the generic "other" bucket), which aren't in this topic.
+              mathTopicId: topic.id,
               count: 5,
               masteryDrill: true,
               mathOnly: true,
