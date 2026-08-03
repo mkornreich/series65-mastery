@@ -10,7 +10,7 @@ import { useTheme } from '../theme/ThemeContext';
 import DashboardScreen from '../screens/DashboardScreen';
 import LearnScreen from '../screens/LearnScreen';
 import ExamIntroScreen from '../screens/ExamIntroScreen';
-import ReviewScreen from '../screens/ReviewScreen';
+import VideosScreen from '../screens/VideosScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SubjectScreen from '../screens/SubjectScreen';
 import TopicScreen from '../screens/TopicScreen';
@@ -32,7 +32,7 @@ const TAB_ICONS: Record<keyof TabParamList, string> = {
   Home: '◉',
   Learn: '▤',
   ExamTab: '▶',
-  Review: '🔁',
+  Watch: '📺',
   Settings: '⚙',
 };
 
@@ -68,7 +68,7 @@ function Tabs() {
         component={ExamIntroScreen}
         options={{ tabBarIcon: icon('ExamTab'), title: 'Exam' }}
       />
-      <Tab.Screen name="Review" component={ReviewScreen} options={{ tabBarIcon: icon('Review') }} />
+      <Tab.Screen name="Watch" component={VideosScreen} options={{ tabBarIcon: icon('Watch'), title: 'Watch' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarIcon: icon('Settings') }} />
     </Tab.Navigator>
   );

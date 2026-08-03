@@ -71,6 +71,6 @@ export type TabParamList = {
   Home: undefined;
   Learn: undefined;
   ExamTab: undefined;
-  Review: undefined;
+  Watch: undefined;
   Settings: undefined;
 };
