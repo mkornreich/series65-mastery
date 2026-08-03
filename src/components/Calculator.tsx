@@ -169,14 +169,17 @@ export function CalculatorModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <Animated.View style={[styles.panel, { transform: pan.getTranslateTransform() }]}>
-        <View style={styles.handle} {...panResponder.panHandlers}>
-          <View style={styles.gripBar} />
-          <View style={styles.handleRow}>
+        {/* The drag zone and the close button are SIBLINGS: the pan responder
+            (which grabs on touch-start) covers only the grip + title, so a tap on
+            ✕ is never swallowed by the drag and always closes the calculator. */}
+        <View style={styles.header}>
+          <View style={styles.dragZone} {...panResponder.panHandlers}>
+            <View style={styles.gripBar} />
             <Text style={styles.handleText}>Calculator · drag to move</Text>
-            <Pressable onPress={onClose} hitSlop={16}>
-              <Text style={styles.close}>✕</Text>
-            </Pressable>
           </View>
+          <Pressable onPress={onClose} hitSlop={24} style={styles.closeBtn}>
+            <Text style={styles.close}>✕</Text>
+          </Pressable>
         </View>
         <View style={styles.displayWrap}>
           <Text style={styles.display} numberOfLines={1} adjustsFontSizeToFit>
@@ -239,26 +242,34 @@ const makeStyles = (colors: ThemeColors) =>
       shadowOffset: { width: 0, height: 6 },
       elevation: 12,
     },
-    handle: {
-      paddingHorizontal: spacing.xs,
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingLeft: spacing.xs,
       paddingTop: spacing.xs,
       paddingBottom: spacing.sm,
     },
+    dragZone: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 2,
+    },
     gripBar: {
-      alignSelf: 'center',
       width: 40,
       height: 5,
       borderRadius: 3,
       backgroundColor: colors.border,
       marginBottom: spacing.sm,
     },
-    handleRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
     handleText: { color: colors.textMuted, fontSize: font.small, fontWeight: '800', letterSpacing: 0.5 },
-    close: { color: colors.textMuted, fontSize: font.h3, fontWeight: '800' },
+    closeBtn: {
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.md,
+      marginLeft: spacing.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    close: { color: colors.text, fontSize: font.h3, fontWeight: '800' },
     displayWrap: {
       backgroundColor: colors.bgAlt,
       borderRadius: radius.md,
