@@ -31,6 +31,8 @@ export interface ProgressState {
   sr: Record<string, SRItem>;
   missed: string[];
   flagged: string[];
+  /** Watch-tab video ids the user has marked as watched. */
+  watchedVideos: string[];
   examHistory: ExamResult[];
   totalAnswered: number;
   totalCorrect: number;
@@ -44,6 +46,7 @@ interface StoreState {
   // actions
   recordAnswer: (q: Question, chosenIndex: number) => void;
   toggleFlag: (qid: string) => void;
+  toggleWatchedVideo: (id: string) => void;
   addExamResult: (r: ExamResult) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   setGenParams: (patch: Partial<GenerationParams>) => void;
@@ -69,6 +72,7 @@ const EMPTY_PROGRESS: ProgressState = {
   sr: {},
   missed: [],
   flagged: [],
+  watchedVideos: [],
   examHistory: [],
   totalAnswered: 0,
   totalCorrect: 0,
@@ -149,6 +153,15 @@ export const useStore = create<StoreState>()(
             ? s.progress.flagged.filter((id) => id !== qid)
             : [qid, ...s.progress.flagged];
           return { progress: { ...s.progress, flagged } };
+        }),
+
+      toggleWatchedVideo: (id) =>
+        set((s) => {
+          // `?? []` guards installs whose persisted progress predates this field.
+          const cur = s.progress.watchedVideos ?? [];
+          const has = cur.includes(id);
+          const watchedVideos = has ? cur.filter((x) => x !== id) : [id, ...cur];
+          return { progress: { ...s.progress, watchedVideos } };
         }),
 
       addExamResult: (r) =>
