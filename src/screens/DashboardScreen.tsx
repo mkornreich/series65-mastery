@@ -3,20 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Screen, Card, AppButton, StatTile, SectionHeader } from '../components/ui';
+import { Screen, Card, AppButton, StatTile } from '../components/ui';
 import { ProgressRing } from '../components/ProgressRing';
-import { MasteryBar } from '../components/MasteryBar';
 import { ThemeColors, spacing, font } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
-import { SUBJECTS, EXAM_SPEC } from '../data/curriculum';
-import {
-  overallReadiness,
-  subjectMastery,
-  masteryScore,
-  masteryLevel,
-  dueCount,
-} from '../mastery/engine';
+import { EXAM_SPEC } from '../data/curriculum';
+import { overallReadiness, dueCount } from '../mastery/engine';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -93,31 +86,6 @@ export default function DashboardScreen() {
           })
         }
       />
-
-      <SectionHeader title="Mastery by section" />
-      {SUBJECTS.map((s) => {
-        const score = subjectMastery(s, mastery);
-        // Represent a subject's overall level by its average score bucket.
-        const level =
-          score === 0
-            ? 'not_started'
-            : score >= 0.85
-            ? 'mastered'
-            : score >= 0.7
-            ? 'proficient'
-            : score >= 0.5
-            ? 'developing'
-            : 'beginning';
-        return (
-          <Card key={s.id} accent={colors.subject[s.id]} onPress={() => navigation.navigate('Subject', { subjectId: s.id })}>
-            <View style={styles.subjRow}>
-              <Text style={styles.subjTitle}>{s.title}</Text>
-              <Text style={styles.subjWeight}>{s.weightPct}%</Text>
-            </View>
-            <MasteryBar score={score} level={level as any} />
-          </Card>
-        );
-      })}
     </Screen>
   );
 }
@@ -132,7 +100,4 @@ const makeStyles = (colors: ThemeColors) =>
   readyBody: { fontSize: font.small, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
   passNote: { fontSize: font.small, fontWeight: '700', marginTop: spacing.sm },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  subjRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-  subjTitle: { flex: 1, color: colors.text, fontSize: font.body, fontWeight: '700', paddingRight: spacing.sm },
-  subjWeight: { color: colors.textFaint, fontSize: font.small, fontWeight: '700' },
 });
