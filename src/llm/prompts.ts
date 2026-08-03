@@ -212,6 +212,11 @@ export function coerceQuestion(
     return null;
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3)
     return null;
+  // Reject duplicate choices — the on-device model sometimes emits the same
+  // option twice (often the correct value), making the item unanswerable. Drop
+  // it (comparing case/space-insensitively) so a fresh one is generated instead.
+  const normChoices = choices.map((c: string) => c.toLowerCase().replace(/\s+/g, ''));
+  if (new Set(normChoices).size !== choices.length) return null;
   const difficulty = DIFFS.includes(raw.difficulty) ? raw.difficulty : 'medium';
   const subtopic = snapSubtopic(raw.subtopic, component);
   return {

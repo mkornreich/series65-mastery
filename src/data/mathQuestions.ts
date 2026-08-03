@@ -32,7 +32,28 @@ export const MATH_QUESTION_IDS: string[] = [
   "econ-analytical-add-range",
   "veh-equity-types-add-marketcap",
   "econ-analytical-add-empirical",
-  "rec-performance-add-alpha"
+  "rec-performance-add-alpha",
+  "rec-performance-add-hpr-1",
+  "rec-performance-add-hpr-2",
+  "rec-performance-add-hpr-3",
+  "econ-analytical-add-quick-1",
+  "econ-analytical-add-quick-2",
+  "econ-analytical-add-quick-3",
+  "econ-analytical-add-de-1",
+  "econ-analytical-add-de-2",
+  "econ-analytical-add-de-3",
+  "econ-analytical-add-pe-1",
+  "econ-analytical-add-pe-2",
+  "econ-analytical-add-pe-3",
+  "econ-analytical-add-npv-1",
+  "econ-analytical-add-npv-2",
+  "econ-analytical-add-npv-3",
+  "econ-analytical-add-rule72-1",
+  "econ-analytical-add-rule72-2",
+  "econ-analytical-add-rule72-3",
+  "veh-equity-char-add-divyield-1",
+  "veh-equity-char-add-divyield-2",
+  "veh-equity-char-add-divyield-3"
 ];
 
 // The curriculum components that actually contain calculation questions.
@@ -107,6 +128,41 @@ export const MATH_QUESTIONS_BY_TOPIC: Record<string, string[]> = {
   ],
   "market-cap": [
     "veh-equity-types-add-marketcap"
+  ],
+  "holding-period-return": [
+    "rec-performance-add-hpr-1",
+    "rec-performance-add-hpr-2",
+    "rec-performance-add-hpr-3"
+  ],
+  "quick-ratio": [
+    "econ-analytical-add-quick-1",
+    "econ-analytical-add-quick-2",
+    "econ-analytical-add-quick-3"
+  ],
+  "debt-to-equity": [
+    "econ-analytical-add-de-1",
+    "econ-analytical-add-de-2",
+    "econ-analytical-add-de-3"
+  ],
+  "pe-ratio": [
+    "econ-analytical-add-pe-1",
+    "econ-analytical-add-pe-2",
+    "econ-analytical-add-pe-3"
+  ],
+  "net-present-value": [
+    "econ-analytical-add-npv-1",
+    "econ-analytical-add-npv-2",
+    "econ-analytical-add-npv-3"
+  ],
+  "rule-of-72": [
+    "econ-analytical-add-rule72-1",
+    "econ-analytical-add-rule72-2",
+    "econ-analytical-add-rule72-3"
+  ],
+  "dividend-yield": [
+    "veh-equity-char-add-divyield-1",
+    "veh-equity-char-add-divyield-2",
+    "veh-equity-char-add-divyield-3"
   ]
 };
 
