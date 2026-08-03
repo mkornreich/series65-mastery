@@ -8,7 +8,7 @@ import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
-import { masteryScore, masteryLevel } from '../mastery/engine';
+import { masteryScore, masteryLevel, subjectMastery } from '../mastery/engine';
 import { bankBySubject } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
 
@@ -38,12 +38,30 @@ export default function SubjectScreen({ route, navigation }: Props) {
     );
   }
 
+  const sectionScore = subjectMastery(subject, mastery);
+  const sectionLevel =
+    sectionScore >= 0.85
+      ? 'mastered'
+      : sectionScore >= 0.7
+      ? 'proficient'
+      : sectionScore >= 0.5
+      ? 'developing'
+      : sectionScore > 0
+      ? 'beginning'
+      : 'not_started';
+
   return (
     <Screen>
       <Text style={styles.title}>{subject.title}</Text>
       <Text style={styles.meta}>
         {subject.weightPct}% of exam · {subject.scoredQuestions} scored questions
       </Text>
+
+      <Card style={{ marginTop: spacing.md }}>
+        <Text style={styles.masteryHeading}>Section mastery</Text>
+        <View style={{ height: spacing.sm }} />
+        <MasteryBar score={sectionScore} level={sectionLevel} />
+      </Card>
 
       <AppButton
         title="Mastery drill (until mastered)"
@@ -111,6 +129,7 @@ const makeStyles = (colors: ThemeColors) =>
   StyleSheet.create({
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   meta: { fontSize: font.small, color: colors.textMuted, marginTop: 4 },
+  masteryHeading: { fontSize: font.small, fontWeight: '700', color: colors.textMuted },
   sectionTitle: {
     fontSize: font.h3,
     fontWeight: '800',

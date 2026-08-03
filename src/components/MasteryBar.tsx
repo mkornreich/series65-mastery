@@ -21,6 +21,12 @@ export function MasteryBar({
   const pct = Math.round(Math.max(0, Math.min(1, score)) * 100);
   return (
     <View style={styles.wrap}>
+      {showLabel && (
+        <View style={styles.labelRow}>
+          <Text style={[styles.level, { color }]}>{masteryLabel[level]}</Text>
+          <Text style={styles.pct}>{pct}%</Text>
+        </View>
+      )}
       <View style={[styles.track, { height, borderRadius: height }]}>
         <View
           style={{
@@ -31,12 +37,6 @@ export function MasteryBar({
           }}
         />
       </View>
-      {showLabel && (
-        <View style={styles.labelRow}>
-          <Text style={[styles.level, { color }]}>{masteryLabel[level]}</Text>
-          <Text style={styles.pct}>{pct}%</Text>
-        </View>
-      )}
     </View>
   );
 }
@@ -52,7 +52,8 @@ const makeStyles = (colors: ThemeColors) =>
     labelRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: 4,
+      alignItems: 'flex-end',
+      marginBottom: 6,
     },
     level: { fontSize: font.tiny, fontWeight: '700' },
     pct: { fontSize: font.tiny, color: colors.textMuted, fontWeight: '600' },

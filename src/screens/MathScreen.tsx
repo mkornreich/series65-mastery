@@ -50,10 +50,8 @@ export default function MathScreen({ navigation }: Props) {
 
       {/* Practice / mastery for ALL math at once, up top like the main sections. */}
       <Card>
-        <View style={styles.topRow}>
-          <Text style={styles.overallLabel}>Your math mastery</Text>
-          <Pill label={masteryLabel[overallLevel]} color={colors.mastery[overallLevel]} bg={`${colors.mastery[overallLevel]}22`} />
-        </View>
+        <Text style={styles.overallLabel}>Your math mastery</Text>
+        <View style={{ height: spacing.sm }} />
         <MasteryBar score={overall} level={overallLevel} />
         <View style={{ height: spacing.md }} />
         <AppButton
