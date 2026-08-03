@@ -179,6 +179,15 @@ export const useStore = create<StoreState>()(
       name: 'series65-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ settings: s.settings, progress: s.progress }),
+      version: 1,
+      // v1: default to loading the model (on the GPU) at launch. Flip existing
+      // installs on once; users who later turn it off keep that choice.
+      migrate: (persisted: any, version: number) => {
+        if (version < 1 && persisted?.settings) {
+          persisted.settings.autoLoadModel = true;
+        }
+        return persisted;
+      },
     }
   )
 );

@@ -9,6 +9,10 @@ import { mathToUnicode } from './inlineMath';
 
 const MIN_SIZE = font.tiny; // 11px floor so nested scripts stay legible
 
+// Render math in the platform serif face so it reads like real math typography
+// (upright serif numbers/operators, italic serif variables — LaTeX's look).
+const MATH_FONT = 'serif';
+
 interface MCtx {
   size: number;
   color: string;
@@ -26,6 +30,7 @@ function Glyph({ node, ctx }: { node: MathExpr; ctx: MCtx }) {
   const style: TextStyle = {
     fontSize: ctx.size,
     color: ctx.color,
+    fontFamily: MATH_FONT,
     fontStyle: isVar(node) ? 'italic' : 'normal',
     includeFontPadding: false,
     textAlignVertical: 'center',
@@ -136,7 +141,7 @@ function Fence({ node, ctx }: { node: MathExpr & { t: 'fence' }; ctx: MCtx }) {
     glyph ? (
       <Text
         allowFontScaling={false}
-        style={{ fontSize: ctx.size, color: ctx.color, transform: [{ scaleY }], includeFontPadding: false, paddingHorizontal: 1 }}
+        style={{ fontSize: ctx.size, color: ctx.color, fontFamily: MATH_FONT, transform: [{ scaleY }], includeFontPadding: false, paddingHorizontal: 1 }}
       >
         {glyph}
       </Text>
@@ -223,7 +228,10 @@ function MathViewImpl({ node, colors, baseSize, inline, inlineStyle }: MathViewP
   if (inline) {
     const str = node.root.length ? mathToUnicode(node.root) : node.raw;
     return (
-      <Text allowFontScaling={false} style={[{ color: colors.text, fontSize: baseSize }, inlineStyle]}>
+      <Text
+        allowFontScaling={false}
+        style={[{ color: colors.text, fontSize: baseSize, fontFamily: MATH_FONT }, inlineStyle]}
+      >
         {str}
       </Text>
     );
