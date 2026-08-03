@@ -136,6 +136,6 @@ const makeStyles = (colors: ThemeColors) =>
     color: colors.textMuted,
     lineHeight: 19,
     marginTop: spacing.xl,
-    textAlign: 'center',
+    textAlign: 'left',
   },
 });

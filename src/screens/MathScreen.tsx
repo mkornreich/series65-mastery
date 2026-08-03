@@ -51,7 +51,7 @@ export default function MathScreen({ navigation }: Props) {
         <MasteryBar score={overall} level={overallLevel} />
         <View style={{ height: spacing.md }} />
         <AppButton
-          title="Mastery drill (all math)"
+          title="Mastery drill (until mastered)"
           icon="🎯"
           onPress={() =>
             navigation.navigate('Quiz', {
