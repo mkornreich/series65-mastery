@@ -11,6 +11,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { SUBJECTS } from '../data/curriculum';
 import { subjectMastery } from '../mastery/engine';
+import { mathMasteryScore } from '../data/math';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,6 +28,7 @@ export default function LearnScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const mastery = useStore((s) => s.progress.mastery);
+  const mathScore = mathMasteryScore(mastery);
 
   return (
     <Screen topInset>
@@ -73,6 +75,9 @@ export default function LearnScreen() {
               Every Series 65 calculation, explained — mastery counts toward its section.
             </Text>
           </View>
+        </View>
+        <View style={{ marginTop: spacing.md }}>
+          <MasteryBar score={mathScore} level={levelFor(mathScore) as any} />
         </View>
       </Card>
     </Screen>

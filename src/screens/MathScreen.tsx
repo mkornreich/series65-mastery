@@ -9,14 +9,12 @@ import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { MATH_TOPICS } from '../data/mathTopics';
+import { MATH_COMPONENT_IDS, mathMasteryScore } from '../data/math';
 import { getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
 import { useLLM } from '../llm/LLMProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Math'>;
-
-// The curriculum components every math topic feeds into (deduped).
-const MATH_COMPONENT_IDS = [...new Set(MATH_TOPICS.map((t) => t.homeComponentId))];
 
 export default function MathScreen({ navigation }: Props) {
   const { colors } = useTheme();
@@ -26,9 +24,7 @@ export default function MathScreen({ navigation }: Props) {
   const aiCapable = llm.available && !!llm.activeModelId;
 
   // Overall math mastery = average across every math topic's home component.
-  const overall =
-    MATH_COMPONENT_IDS.reduce((a, id) => a + masteryScore(mastery[id]), 0) /
-    Math.max(1, MATH_COMPONENT_IDS.length);
+  const overall = mathMasteryScore(mastery);
   const overallLevel =
     overall >= 0.85
       ? 'mastered'
