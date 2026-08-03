@@ -11,7 +11,7 @@ import {
   DownloadController,
 } from '../llm/modelManager';
 import { geminiSupported, geminiAvailable } from '../llm/geminiEngine';
-import { localLitertModels } from '../llm/litertEngine';
+import { localLitertModels, deleteLocalLitert } from '../llm/litertEngine';
 import { useStore } from '../store/useStore';
 import { useLLM, localLitertModelInfo } from '../llm/LLMProvider';
 import { LLMModelInfo } from '../types';
@@ -228,6 +228,28 @@ export default function ModelManagerScreen() {
     );
   };
 
+  const removeLocal = (fileName: string, modelId: string) => {
+    Alert.alert(
+      'Remove this model?',
+      `Delete the imported file “${fileName}” from this app’s storage. The app lists every .litertlm file dropped into its folder, so removing it here takes it off the list.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            if (activeModelId === modelId) {
+              await llm.unload();
+              setActiveModel(null);
+            }
+            deleteLocalLitert(fileName);
+            setLocalModels(localLitertModels());
+          },
+        },
+      ]
+    );
+  };
+
   const renderLocalLitert = (fileName: string) => {
     const m = localLitertModelInfo(fileName);
     const isActive = activeModelId === m.id;
@@ -264,6 +286,8 @@ export default function ModelManagerScreen() {
           ) : (
             <AppButton title="Set active" variant="primary" onPress={() => activate(m)} style={{ flex: 1 }} />
           )}
+          <View style={{ width: spacing.sm }} />
+          <AppButton title="Remove" variant="ghost" onPress={() => removeLocal(fileName, m.id)} />
         </View>
       </Card>
     );

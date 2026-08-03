@@ -11,7 +11,6 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { SUBJECTS } from '../data/curriculum';
 import { subjectMastery } from '../mastery/engine';
-import { bankBySubject } from '../mastery/selection';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -52,8 +51,7 @@ export default function LearnScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.title}>{s.title}</Text>
                 <Text style={styles.meta}>
-                  {s.components.length} topics · {s.weightPct}% of exam ·{' '}
-                  {bankBySubject(s.id).length} questions
+                  {s.components.length} topics · {s.weightPct}% of exam
                 </Text>
               </View>
             </View>
@@ -63,6 +61,20 @@ export default function LearnScreen() {
           </Card>
         );
       })}
+
+      <Card accent={colors.accent} onPress={() => navigation.navigate('Math')}>
+        <View style={styles.row}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>∑</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Math & formulas</Text>
+            <Text style={styles.meta}>
+              Every Series 65 calculation, explained — mastery counts toward its section.
+            </Text>
+          </View>
+        </View>
+      </Card>
     </Screen>
   );
 }

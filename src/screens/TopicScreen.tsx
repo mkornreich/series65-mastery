@@ -108,7 +108,7 @@ export default function TopicScreen({ route, navigation }: Props) {
       />
       <View style={{ height: spacing.sm }} />
       <AppButton
-        title={aiCapable ? 'Practice (endless)' : `Practice (${Math.min(10, bankCount)} questions)`}
+        title={aiCapable ? 'Practice (endless)' : 'Practice this topic'}
         icon="✎"
         variant="secondary"
         onPress={() =>

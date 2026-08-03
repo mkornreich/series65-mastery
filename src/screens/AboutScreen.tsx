@@ -5,7 +5,6 @@ import { Screen, Card, Body, Divider, AppButton } from '../components/ui';
 import { spacing, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { EXAM_SPEC, SUBJECTS } from '../data/curriculum';
-import { totalBankQuestions } from '../mastery/selection';
 
 export default function AboutScreen() {
   const { colors } = useTheme();
@@ -48,8 +47,8 @@ export default function AboutScreen() {
       <Card>
         <Text style={styles.h3}>Content</Text>
         <Body muted style={{ marginTop: spacing.sm }}>
-          {totalBankQuestions()} practice questions across four sections. Curriculum
-          structure follows the NASAA Series 65 exam content outline.
+          A curated question bank plus unlimited on-device AI practice across all four
+          sections. Curriculum structure follows the NASAA Series 65 exam content outline.
         </Body>
         <Divider />
         <Text style={styles.source}>Blueprint source: {EXAM_SPEC.source}</Text>

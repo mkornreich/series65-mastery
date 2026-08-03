@@ -19,6 +19,8 @@ import QuizResultScreen from '../screens/QuizResultScreen';
 import ExamScreen from '../screens/ExamScreen';
 import ExamResultScreen from '../screens/ExamResultScreen';
 import TutorScreen from '../screens/TutorScreen';
+import MathScreen from '../screens/MathScreen';
+import MathTopicScreen from '../screens/MathTopicScreen';
 import ModelManagerScreen from '../screens/ModelManagerScreen';
 import AboutScreen from '../screens/AboutScreen';
 import MarkdownPreviewScreen from '../screens/MarkdownPreviewScreen';
@@ -100,6 +102,8 @@ export default function RootNavigator() {
         options={{ title: 'Exam results', headerBackVisible: false }}
       />
       <Stack.Screen name="Tutor" component={TutorScreen} options={{ title: 'AI Tutor' }} />
+      <Stack.Screen name="Math" component={MathScreen} options={{ title: 'Math & formulas' }} />
+      <Stack.Screen name="MathTopic" component={MathTopicScreen} options={{ title: 'Formula' }} />
       <Stack.Screen name="ModelManager" component={ModelManagerScreen} options={{ title: 'AI models' }} />
       <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
       {__DEV__ && (

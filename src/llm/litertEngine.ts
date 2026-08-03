@@ -3,6 +3,7 @@ import {
   isLitertSupported,
   litertModelsDir,
   listLocalLitertModels,
+  deleteLocalLitertModel,
   litertLoad,
   litertGenerate,
   litertRelease,
@@ -18,6 +19,10 @@ export function litertDir(): string | null {
 
 export function localLitertModels(): string[] {
   return listLocalLitertModels();
+}
+
+export function deleteLocalLitert(fileName: string): boolean {
+  return deleteLocalLitertModel(fileName);
 }
 
 export async function litertLoadModel(

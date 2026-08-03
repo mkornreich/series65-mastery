@@ -97,6 +97,28 @@ class LitertLmModule : Module() {
         ?.map { it.name } ?: emptyList<String>()
     }
 
+    // Delete an imported .litertlm file (and its compile caches) from our own
+    // models dir. Guarded to that directory so it can never touch other files.
+    Function("deleteLocalModel") { fileName: String ->
+      val dir = modelsDir()
+      val f = File(dir, fileName)
+      if (!f.exists() || f.parentFile != dir || !fileName.endsWith(".litertlm")) {
+        false
+      } else {
+        if (loadedPath == f.absolutePath) releaseEngine()
+        dir.listFiles()?.forEach { c ->
+          if (
+            c.name != fileName &&
+            c.name.startsWith(fileName) &&
+            (c.name.contains("cache") || c.name.contains("mldrift") || c.name.endsWith(".bin"))
+          ) {
+            c.delete()
+          }
+        }
+        f.delete()
+      }
+    }
+
     AsyncFunction("load") { modelPath: String, useGpu: Boolean, maxTokens: Int, promise: Promise ->
       scope.launch {
         try {

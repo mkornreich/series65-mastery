@@ -51,6 +51,8 @@ export type RootStackParamList = {
     question?: Question;
     chosenIndex?: number;
   };
+  Math: undefined;
+  MathTopic: { topicId: string };
   ModelManager: undefined;
   About: undefined;
   MarkdownPreview: undefined;

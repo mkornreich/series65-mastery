@@ -9,7 +9,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
-import { bankByComponent, bankBySubject } from '../mastery/selection';
+import { bankBySubject } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Subject'>;
@@ -84,7 +84,6 @@ export default function SubjectScreen({ route, navigation }: Props) {
         const m = mastery[c.id];
         const score = masteryScore(m);
         const level = masteryLevel(m);
-        const bankCount = bankByComponent(c.id).length;
         return (
           <Card key={c.id} onPress={() => navigation.navigate('Topic', { componentId: c.id })}>
             <View style={styles.topRow}>
@@ -97,9 +96,7 @@ export default function SubjectScreen({ route, navigation }: Props) {
                 bg={`${colors.mastery[level]}22`}
               />
             </View>
-            <Text style={styles.topicMeta}>
-              {c.subtopics.length} subtopics · {bankCount} questions
-            </Text>
+            <Text style={styles.topicMeta}>{c.subtopics.length} subtopics</Text>
             <View style={{ marginTop: spacing.sm }}>
               <MasteryBar score={score} level={level} showLabel={false} height={6} />
             </View>

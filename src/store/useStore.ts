@@ -59,7 +59,9 @@ const DEFAULT_SETTINGS: Settings = {
   nCtx: 2048,
   useAIForExam: false,
   aiExplanations: true,
-  autoLoadModel: false,
+  // Warm the on-device model (on the GPU when supported) as soon as the app
+  // opens, so the first tutor/generation has no load latency.
+  autoLoadModel: true,
 };
 
 const EMPTY_PROGRESS: ProgressState = {

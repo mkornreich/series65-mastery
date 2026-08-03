@@ -4,6 +4,20 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type SubjectId = 'econ' | 'vehicles' | 'recommendations' | 'laws';
 
+/** A Series 65 math/formula topic. Mastery flows to its home component (section). */
+export interface MathTopic {
+  id: string;
+  title: string;
+  homeComponentId: string;
+  subjectId: string;
+  formulaLatex: string;
+  summary: string;
+  variables: string[];
+  whenToUse: string;
+  workedExample: string;
+  pitfall: string;
+}
+
 export interface Component {
   id: string;
   number: number;

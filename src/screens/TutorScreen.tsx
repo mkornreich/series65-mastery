@@ -275,6 +275,9 @@ export default function TutorScreen({ route, navigation }: Props) {
                 );
               })}
             </View>
+            {question.explanation ? (
+              <Text style={styles.qExplain}>{question.explanation}</Text>
+            ) : null}
           </View>
         )}
         {messages.length === 0 && (
@@ -391,6 +394,15 @@ const makeStyles = (colors: ThemeColors) =>
   qChoiceText: { flex: 1, color: colors.text, fontSize: font.small, lineHeight: 19 },
   qTagCorrect: { color: colors.success, fontSize: font.tiny, fontWeight: '800', marginLeft: 6 },
   qTagWrong: { color: colors.danger, fontSize: font.tiny, fontWeight: '800', marginLeft: 6 },
+  qExplain: {
+    color: colors.textMuted,
+    fontSize: font.small,
+    lineHeight: 19,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   content: { padding: spacing.lg, paddingBottom: spacing.xl },
   hello: { color: colors.text, fontSize: font.h3, fontWeight: '800', marginTop: spacing.md },
   helloSub: { color: colors.textMuted, fontSize: font.small, marginTop: spacing.xs, marginBottom: spacing.lg },

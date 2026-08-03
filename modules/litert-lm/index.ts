@@ -4,6 +4,7 @@ interface LitertLmNative {
   isSupported(): boolean;
   modelsDir(): string;
   listLocalModels(): string[];
+  deleteLocalModel(fileName: string): boolean;
   load(modelPath: string, useGpu: boolean, maxTokens: number): Promise<boolean>;
   generate(
     prompt: string,
@@ -46,6 +47,15 @@ export function listLocalLitertModels(): string[] {
     return native ? native.listLocalModels() : [];
   } catch {
     return [];
+  }
+}
+
+/** Delete an imported .litertlm file (and its caches) from the app's models dir. */
+export function deleteLocalLitertModel(fileName: string): boolean {
+  try {
+    return native ? native.deleteLocalModel(fileName) : false;
+  } catch {
+    return false;
   }
 }
 
