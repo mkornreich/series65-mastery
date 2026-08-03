@@ -68,7 +68,7 @@ export default function MathScreen({ navigation }: Props) {
         />
         <View style={{ height: spacing.sm }} />
         <AppButton
-          title={aiCapable ? 'Practice all math (endless)' : 'Practice all math'}
+          title={aiCapable ? 'Practice (endless)' : 'Practice'}
           icon="✎"
           variant="secondary"
           onPress={() =>
