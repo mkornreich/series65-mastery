@@ -17,6 +17,7 @@ import {
   selectReview,
   questionsByIds,
   bankByComponent,
+  sample,
 } from '../mastery/selection';
 import { isMastered, masteryScore } from '../mastery/engine';
 import { COMPONENT_BY_ID, getSubject } from '../data/curriculum';
@@ -37,6 +38,14 @@ function resolveQuestions(config: Props['route']['params']['config']): Question[
       return selectAdaptive(st.mastery, st.sr, st.missed, count);
     case 'component':
       return selectForComponent(config.componentId!, st.sr, st.missed, count);
+    case 'components': {
+      // Practice across a set of components at once (e.g. every math topic).
+      const seen = new Set<string>();
+      const pool = (config.componentIds ?? [])
+        .flatMap((id) => bankByComponent(id))
+        .filter((q) => (seen.has(q.id) ? false : (seen.add(q.id), true)));
+      return sample(pool, count);
+    }
     case 'subject':
       return selectForSubject(config.subjectId!, count);
     case 'review':
@@ -99,17 +108,17 @@ export default function QuizScreen({ route, navigation }: Props) {
   const genRotationRef = useRef(0);
   const pickGenComponent = useCallback((): Component | undefined => {
     if (config.componentId) return COMPONENT_BY_ID[config.componentId];
-    if (config.subjectId) {
-      const comps = (getSubject(config.subjectId)?.components ?? []).filter(
-        (c) => bankByComponent(c.id).length > 0
-      );
-      if (!comps.length) return undefined;
-      const c = comps[genRotationRef.current % comps.length];
-      genRotationRef.current += 1;
-      return c;
-    }
-    return undefined;
-  }, [config.componentId, config.subjectId]);
+    const ids = config.subjectId
+      ? (getSubject(config.subjectId)?.components ?? []).map((c) => c.id)
+      : config.componentIds ?? [];
+    const comps = ids
+      .map((id) => COMPONENT_BY_ID[id])
+      .filter((c) => c && bankByComponent(c.id).length > 0);
+    if (!comps.length) return undefined;
+    const c = comps[genRotationRef.current % comps.length];
+    genRotationRef.current += 1;
+    return c;
+  }, [config.componentId, config.subjectId, config.componentIds]);
   const generatingRef = useRef(false);
   // Normalized stems already served, to drop repeated generations (lazy-init once).
   const seenStemsRef = useRef<Set<string> | null>(null);
@@ -247,12 +256,16 @@ export default function QuizScreen({ route, navigation }: Props) {
             return;
           }
         }
-      } else if (config.subjectId) {
-        // Whole section: drill the weakest not-yet-mastered topic, moving on as
-        // each is mastered, until every topic in the section is mastered.
-        const comps = (getSubject(config.subjectId)?.components ?? []).filter(
-          (c) => bankByComponent(c.id).length > 0
-        );
+      } else if (config.subjectId || config.componentIds) {
+        // Whole section (or a set of topics, e.g. all math): drill the weakest
+        // not-yet-mastered topic, moving on as each is mastered, until every one
+        // in the set is mastered.
+        const ids = config.subjectId
+          ? (getSubject(config.subjectId)?.components ?? []).map((c) => c.id)
+          : config.componentIds ?? [];
+        const comps = ids
+          .map((id) => COMPONENT_BY_ID[id])
+          .filter((c) => c && bankByComponent(c.id).length > 0);
         const unmastered = comps
           .filter((c) => !isMastered(st.mastery[c.id]))
           .sort((a, b) => masteryScore(st.mastery[a.id]) - masteryScore(st.mastery[b.id]));

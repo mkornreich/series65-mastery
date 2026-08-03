@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TextStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ThemeColors, font, spacing } from '../../../theme/theme';
 import type { MathExpr } from './mathAst';
@@ -224,6 +224,8 @@ export interface MathViewProps {
 }
 
 function MathViewImpl({ node, colors, baseSize, inline, inlineStyle }: MathViewProps) {
+  const [availW, setAvailW] = useState(0);
+  const [content, setContent] = useState({ w: 0, h: 0 });
   // Inline: a Unicode text run so it wraps with the sentence.
   if (inline) {
     const str = node.root.length ? mathToUnicode(node.root) : node.raw;
@@ -236,32 +238,37 @@ function MathViewImpl({ node, colors, baseSize, inline, inlineStyle }: MathViewP
       </Text>
     );
   }
-  // Display: full 2-D layout, centered, horizontally scrollable if wide.
-  // paddingVertical gives super/subscripts (positioned by transform, which does
-  // not enlarge the layout box) room so the horizontal ScrollView doesn't clip them.
+  // Display: full 2-D layout, centered, and SHRUNK to fit the available width so
+  // a long formula scales down instead of overflowing/scrolling. We measure the
+  // natural content size once (transform:scale doesn't change the measured box,
+  // so there's no feedback loop) and scale from there.
   const ctx: MCtx = { size: Math.round(baseSize * 1.12), color: colors.text, colors };
-  const vpad = Math.round(baseSize * 0.7);
+  const vpad = Math.round(baseSize * 0.6);
+  const scale = content.w > availW && availW > 0 ? Math.max(0.4, availW / content.w) : 1;
   return (
-    <View style={{ marginTop: spacing.sm, marginBottom: spacing.xs }}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: spacing.sm,
-          paddingVertical: vpad,
-        }}
-      >
-        {node.root.length ? (
-          <Row nodes={node.root} ctx={ctx} />
-        ) : (
-          <Text allowFontScaling={false} style={{ color: colors.textMuted, fontSize: baseSize }}>
-            {node.raw}
-          </Text>
-        )}
-      </ScrollView>
+    <View
+      onLayout={(e) => setAvailW(e.nativeEvent.layout.width)}
+      style={{ marginTop: spacing.sm, marginBottom: spacing.xs, alignItems: 'center', overflow: 'hidden' }}
+    >
+      <View style={{ height: content.h ? Math.ceil(content.h * scale) + vpad : undefined, justifyContent: 'center' }}>
+        <View
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            if (Math.abs(width - content.w) > 0.5 || Math.abs(height - content.h) > 0.5) {
+              setContent({ w: width, h: height });
+            }
+          }}
+          style={{ transform: [{ scale }] }}
+        >
+          {node.root.length ? (
+            <Row nodes={node.root} ctx={ctx} />
+          ) : (
+            <Text allowFontScaling={false} style={{ color: colors.textMuted, fontSize: baseSize }}>
+              {node.raw}
+            </Text>
+          )}
+        </View>
+      </View>
     </View>
   );
 }

@@ -48,32 +48,6 @@ export default function MathTopicScreen({ route, navigation }: Props) {
       <Text style={styles.title}>{topic.title}</Text>
 
       <Card>
-        <View style={styles.formulaWrap}>
-          <Markdown source={`$$${topic.formulaLatex}$$`} baseSize={font.body} />
-        </View>
-        <Body style={{ marginTop: spacing.md }}>{topic.summary}</Body>
-      </Card>
-
-      <Card style={{ marginTop: spacing.md }}>
-        <Text style={styles.h2}>What the variables mean</Text>
-        {topic.variables.map((v, i) => (
-          <View key={i} style={styles.bulletRow}>
-            <Text style={styles.dot}>•</Text>
-            <Markdown source={v} baseSize={font.body} />
-          </View>
-        ))}
-        <Divider />
-        <Text style={styles.h2}>When to use it</Text>
-        <Body>{topic.whenToUse}</Body>
-        <Divider />
-        <Text style={styles.h2}>Worked example</Text>
-        <Markdown source={topic.workedExample} baseSize={font.body} />
-        <Divider />
-        <Text style={[styles.h2, { color: colors.warn }]}>Common trap</Text>
-        <Body>{topic.pitfall}</Body>
-      </Card>
-
-      <Card style={{ marginTop: spacing.md }}>
         <View style={styles.statusRow}>
           <Text style={styles.statusLabel}>
             Mastery in {subject?.title ?? topic.subjectId}
@@ -132,6 +106,32 @@ export default function MathTopicScreen({ route, navigation }: Props) {
           })
         }
       />
+
+      <Card style={{ marginTop: spacing.lg }}>
+        <View style={styles.formulaWrap}>
+          <Markdown source={`$$${topic.formulaLatex}$$`} baseSize={font.body} />
+        </View>
+        <Body style={{ marginTop: spacing.md }}>{topic.summary}</Body>
+      </Card>
+
+      <Card style={{ marginTop: spacing.md }}>
+        <Text style={styles.h2}>What the variables mean</Text>
+        {topic.variables.map((v, i) => (
+          <View key={i} style={styles.bulletRow}>
+            <Text style={styles.dot}>•</Text>
+            <Markdown source={v} baseSize={font.body} />
+          </View>
+        ))}
+        <Divider />
+        <Text style={styles.h2}>When to use it</Text>
+        <Body>{topic.whenToUse}</Body>
+        <Divider />
+        <Text style={styles.h2}>Worked example</Text>
+        <Markdown source={topic.workedExample} baseSize={font.body} />
+        <Divider />
+        <Text style={[styles.h2, { color: colors.warn }]}>Common trap</Text>
+        <Body>{topic.pitfall}</Body>
+      </Card>
     </Screen>
   );
 }

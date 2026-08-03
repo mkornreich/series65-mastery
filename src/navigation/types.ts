@@ -3,6 +3,7 @@ import { Question } from '../types';
 export type QuizMode =
   | 'adaptive'
   | 'component'
+  | 'components'
   | 'subject'
   | 'review'
   | 'flagged'
@@ -14,6 +15,8 @@ export interface QuizConfig {
   title: string;
   mode: QuizMode;
   componentId?: string;
+  /** For mode 'components': practice/drill across this set of components at once. */
+  componentIds?: string[];
   subjectId?: string;
   count?: number;
   /** Explicit ordered question ids from the bank. */
