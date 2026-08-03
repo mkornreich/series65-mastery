@@ -90,7 +90,8 @@ interface LLMContextValue {
   generateQuestions: (
     component: Component,
     count: number,
-    avoidStems?: string[]
+    avoidStems?: string[],
+    focus?: string
   ) => Promise<Question[]>;
   stop: () => Promise<void>;
 }
@@ -333,13 +334,13 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   );
 
   const generateQuestions = useCallback(
-    (component: Component, count: number, avoidStems: string[] = []) =>
+    (component: Component, count: number, avoidStems: string[] = [], focus?: string) =>
       runExclusive(async () => {
         await ensureReady();
         setStatus('generating');
         try {
           const examples = bankByComponent(component.id);
-          const messages = buildGenerateMessages(component, count, examples, avoidStems);
+          const messages = buildGenerateMessages(component, count, examples, avoidStems, focus);
           const maxTokens = Math.max(768, count * 240);
           const kind = kindOf(activeModelId);
           let text: string;

@@ -27,6 +27,12 @@ export interface QuizConfig {
   masteryDrill?: boolean;
   /** Endlessly generate fresh AI questions for the component as you progress. */
   aiInfinite?: boolean;
+  /** Serve only calculation (math) questions from the selected component(s). */
+  mathOnly?: boolean;
+  /** Restrict to one math formula topic's calculation questions. */
+  mathTopicId?: string;
+  /** Extra instruction for endless generation, e.g. to force calculation problems. */
+  genFocus?: string;
 }
 
 export interface AnswerRecord {

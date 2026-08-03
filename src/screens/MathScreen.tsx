@@ -11,7 +11,6 @@ import { useStore } from '../store/useStore';
 import { MATH_TOPICS } from '../data/mathTopics';
 import { getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
-import { bankByComponent } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Math'>;
@@ -40,10 +39,6 @@ export default function MathScreen({ navigation }: Props) {
       : overall > 0
       ? 'beginning'
       : 'not_started';
-  const mathBankCount = MATH_COMPONENT_IDS.reduce(
-    (a, id) => a + bankByComponent(id).length,
-    0
-  );
 
   return (
     <Screen>
@@ -72,6 +67,7 @@ export default function MathScreen({ navigation }: Props) {
                 componentIds: MATH_COMPONENT_IDS,
                 count: 5,
                 masteryDrill: true,
+                mathOnly: true,
               },
             })
           }
@@ -87,8 +83,11 @@ export default function MathScreen({ navigation }: Props) {
                 title: 'Math practice',
                 mode: 'components',
                 componentIds: MATH_COMPONENT_IDS,
-                count: aiCapable ? Math.max(mathBankCount, 1) : 12,
+                count: aiCapable ? 40 : 12,
                 aiInfinite: aiCapable,
+                mathOnly: true,
+                genFocus:
+                  'Focus on Series 65 calculation problems using the exam formulas (yields, ratios, total/after-tax return, future value, NPV, NAV, market cap, CAPM).',
               },
             })
           }

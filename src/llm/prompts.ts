@@ -61,7 +61,9 @@ export function buildGenerateMessages(
   component: Component,
   count: number,
   examples: Question[],
-  avoidStems: string[] = []
+  avoidStems: string[] = [],
+  /** Extra instruction, e.g. to force calculation/word-problem questions. */
+  focus?: string
 ): ChatMessage[] {
   const exampleBlock = examples
     .slice(0, 2)
@@ -94,6 +96,10 @@ export function buildGenerateMessages(
       content:
         `Write ${count} NEW, original Series 65 multiple-choice questions for the topic ` +
         `"${component.title}". Cover these subtopics:\n${subtopics}\n\n` +
+        (focus
+          ? `${focus} Every question MUST be a numeric word problem that requires the ` +
+            `student to CALCULATE the answer; the four choices must be numbers/amounts.\n\n`
+          : '') +
         `Return ONLY a JSON object of the form {"questions":[ ... ]} where each item is:\n` +
         `{"stem": string, "choices": [4 strings], "answerIndex": 0-3, "explanation": string, ` +
         `"subtopic": string, "difficulty": "easy"|"medium"|"hard"}\n\n` +

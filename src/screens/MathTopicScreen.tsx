@@ -11,7 +11,6 @@ import { useStore } from '../store/useStore';
 import { MATH_TOPICS } from '../data/mathTopics';
 import { getComponent, getSubject } from '../data/curriculum';
 import { masteryScore, masteryLevel } from '../mastery/engine';
-import { bankByComponent } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MathTopic'>;
@@ -41,7 +40,6 @@ export default function MathTopicScreen({ route, navigation }: Props) {
   const score = masteryScore(mastery);
   const level = masteryLevel(mastery);
   const aiCapable = llm.available && !!llm.activeModelId;
-  const bankCount = bankByComponent(topic.homeComponentId).length;
 
   return (
     <Screen>
@@ -73,6 +71,7 @@ export default function MathTopicScreen({ route, navigation }: Props) {
               componentId: topic.homeComponentId,
               count: 5,
               masteryDrill: true,
+              mathOnly: true,
             },
           })
         }
@@ -88,8 +87,10 @@ export default function MathTopicScreen({ route, navigation }: Props) {
               title: topic.title,
               mode: 'component',
               componentId: topic.homeComponentId,
-              count: aiCapable ? Math.max(bankCount, 1) : 10,
+              mathTopicId: topic.id,
+              count: aiCapable ? 12 : 6,
               aiInfinite: aiCapable,
+              genFocus: `Focus only on the "${topic.title}" formula. ${topic.summary}`,
             },
           })
         }

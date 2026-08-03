@@ -21,6 +21,7 @@ import {
 } from '../mastery/selection';
 import { isMastered, masteryScore } from '../mastery/engine';
 import { COMPONENT_BY_ID, getSubject } from '../data/curriculum';
+import { MATH_QUESTION_IDS, MATH_QUESTIONS_BY_TOPIC, isMathQuestion } from '../data/mathQuestions';
 import { Component } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
@@ -36,10 +37,24 @@ function resolveQuestions(config: Props['route']['params']['config']): Question[
   switch (config.mode) {
     case 'adaptive':
       return selectAdaptive(st.mastery, st.sr, st.missed, count);
-    case 'component':
+    case 'component': {
+      // One formula's calculation questions only.
+      if (config.mathTopicId) {
+        return sample(questionsByIds(MATH_QUESTIONS_BY_TOPIC[config.mathTopicId] ?? []), count);
+      }
+      if (config.mathOnly) {
+        return selectForComponent(config.componentId!, st.sr, st.missed, 999)
+          .filter((q) => isMathQuestion(q.id))
+          .slice(0, count);
+      }
       return selectForComponent(config.componentId!, st.sr, st.missed, count);
+    }
     case 'components': {
-      // Practice across a set of components at once (e.g. every math topic).
+      // "Practice all math": serve every tagged calculation question, wherever
+      // it lives in the bank (endless generation still rotates componentIds).
+      if (config.mathOnly) {
+        return sample(questionsByIds(MATH_QUESTION_IDS), count);
+      }
       const seen = new Set<string>();
       const pool = (config.componentIds ?? [])
         .flatMap((id) => bankByComponent(id))
@@ -159,7 +174,7 @@ export default function QuizScreen({ route, navigation }: Props) {
     setGeneratingMore(true);
     const avoid = questions.slice(-12).map((q) => q.stem);
     llm
-      .generateQuestions(target, AI_BATCH, avoid)
+      .generateQuestions(target, AI_BATCH, avoid, config.genFocus)
       .then((qs) => {
         if (!mountedRef.current) return;
         const seen = seenStemsRef.current!;
@@ -242,6 +257,13 @@ export default function QuizScreen({ route, navigation }: Props) {
         setSelected(null);
         setRevealed(false);
       };
+      // Respect a math-only / single-formula drill by only refilling with
+      // matching (calculation) questions.
+      const topicIds = config.mathTopicId
+        ? new Set(MATH_QUESTIONS_BY_TOPIC[config.mathTopicId] ?? [])
+        : null;
+      const mathMatch = (q: Question) =>
+        topicIds ? topicIds.has(q.id) : config.mathOnly ? isMathQuestion(q.id) : true;
       if (config.componentId) {
         // One topic: drill until that topic is mastered.
         if (!isMastered(st.mastery[config.componentId])) {
@@ -249,7 +271,7 @@ export default function QuizScreen({ route, navigation }: Props) {
           // filtering after a top-N slice would strip every fresh question once
           // the highest-priority (missed) items are all served, ending early.
           const more = selectForComponent(config.componentId, st.sr, st.missed, 999)
-            .filter((q) => !servedIds.has(q.id))
+            .filter((q) => !servedIds.has(q.id) && mathMatch(q))
             .slice(0, 5);
           if (more.length) {
             appendAndAdvance(more);
@@ -271,7 +293,7 @@ export default function QuizScreen({ route, navigation }: Props) {
           .sort((a, b) => masteryScore(st.mastery[a.id]) - masteryScore(st.mastery[b.id]));
         for (const c of unmastered) {
           const more = selectForComponent(c.id, st.sr, st.missed, 999)
-            .filter((q) => !servedIds.has(q.id))
+            .filter((q) => !servedIds.has(q.id) && mathMatch(q))
             .slice(0, 5);
           if (more.length) {
             appendAndAdvance(more);
