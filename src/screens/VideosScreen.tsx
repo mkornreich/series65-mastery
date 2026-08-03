@@ -63,10 +63,7 @@ export default function VideosScreen() {
   return (
     <Screen topInset>
       <Text style={styles.h1}>Watch</Text>
-      <Text style={styles.sub}>
-        Free Series 65 video lessons from top instructors — including Dean Tinney &
-        Brian Lee's “Geek and the Guru” series. Tap to open on YouTube.
-      </Text>
+      <Text style={styles.sub}>Free Series 65 video lessons from top instructors.</Text>
 
       <ScrollView
         horizontal

@@ -37,8 +37,14 @@ const TAB_ICONS: Record<keyof TabParamList, string> = {
 };
 
 function icon(name: keyof TabParamList) {
-  return ({ color }: { color: string }) => (
-    <Text style={{ fontSize: 18, color }}>{TAB_ICONS[name]}</Text>
+  // Emoji icons (e.g. Watch's 📺) render in full color and ignore the tab's
+  // active/inactive tint, so dim them when the tab isn't focused to read as
+  // "inactive" like the monochrome glyph icons.
+  const dimWhenInactive = name === 'Watch';
+  return ({ color, focused }: { color: string; focused: boolean }) => (
+    <Text style={{ fontSize: 18, color, opacity: dimWhenInactive && !focused ? 0.4 : 1 }}>
+      {TAB_ICONS[name]}
+    </Text>
   );
 }
 
