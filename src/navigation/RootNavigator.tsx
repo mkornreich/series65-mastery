@@ -11,6 +11,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import LearnScreen from '../screens/LearnScreen';
 import ExamIntroScreen from '../screens/ExamIntroScreen';
 import VideosScreen from '../screens/VideosScreen';
+import FlashcardsScreen from '../screens/FlashcardsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SubjectScreen from '../screens/SubjectScreen';
 import TopicScreen from '../screens/TopicScreen';
@@ -33,14 +34,14 @@ const TAB_ICONS: Record<keyof TabParamList, string> = {
   Learn: '▤',
   ExamTab: '▶',
   Watch: '📺',
-  Settings: '⚙',
+  Flashcards: '🗂',
 };
 
 function icon(name: keyof TabParamList) {
   // Emoji icons (e.g. Watch's 📺) render in full color and ignore the tab's
   // active/inactive tint, so dim them when the tab isn't focused to read as
   // "inactive" like the monochrome glyph icons.
-  const dimWhenInactive = name === 'Watch';
+  const dimWhenInactive = name === 'Watch' || name === 'Flashcards';
   return ({ color, focused }: { color: string; focused: boolean }) => (
     <Text style={{ fontSize: 18, color, opacity: dimWhenInactive && !focused ? 0.4 : 1 }}>
       {TAB_ICONS[name]}
@@ -75,7 +76,7 @@ function Tabs() {
         options={{ tabBarIcon: icon('ExamTab'), title: 'Exam' }}
       />
       <Tab.Screen name="Watch" component={VideosScreen} options={{ tabBarIcon: icon('Watch'), title: 'Watch' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarIcon: icon('Settings') }} />
+      <Tab.Screen name="Flashcards" component={FlashcardsScreen} options={{ tabBarIcon: icon('Flashcards'), title: 'Cards' }} />
     </Tab.Navigator>
   );
 }
@@ -110,6 +111,7 @@ export default function RootNavigator() {
       <Stack.Screen name="Tutor" component={TutorScreen} options={{ title: 'AI Tutor' }} />
       <Stack.Screen name="Math" component={MathScreen} options={{ title: 'Math & formulas' }} />
       <Stack.Screen name="MathTopic" component={MathTopicScreen} options={{ title: 'Formula' }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       <Stack.Screen name="ModelManager" component={ModelManagerScreen} options={{ title: 'AI models' }} />
       <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
       {__DEV__ && (

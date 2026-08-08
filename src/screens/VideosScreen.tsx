@@ -80,7 +80,7 @@ export default function VideosScreen() {
   ];
 
   return (
-    <Screen topInset>
+    <Screen topInset settingsGear>
       <Text style={styles.h1}>Watch</Text>
       <Text style={styles.sub}>Free Series 65 video lessons from top instructors.</Text>
 

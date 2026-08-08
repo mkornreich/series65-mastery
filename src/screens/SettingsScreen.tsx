@@ -149,9 +149,7 @@ export default function SettingsScreen() {
   const showContext = kind === 'litertlm' || kind === 'gguf';
 
   return (
-    <Screen topInset>
-      <Text style={styles.h1}>Settings</Text>
-
+    <Screen>
       <SectionHeader title="Appearance" />
       <Card>
         <Row label="Theme" desc="Follow the system setting, or force light or dark." right={null as any} />

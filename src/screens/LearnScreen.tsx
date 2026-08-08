@@ -31,7 +31,7 @@ export default function LearnScreen() {
   const mathScore = mathMasteryScore(mastery);
 
   return (
-    <Screen topInset>
+    <Screen topInset settingsGear>
       <Text style={styles.h1}>Learn</Text>
       <Text style={styles.sub}>
         The four exam sections and their blueprint weights. Study each topic, then

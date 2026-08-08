@@ -33,7 +33,7 @@ export default function DashboardScreen() {
     readyPct >= passMark ? colors.success : readyPct >= 50 ? colors.warn : colors.primary;
 
   return (
-    <Screen topInset>
+    <Screen topInset settingsGear>
       <Text style={styles.h1}>Series 65 Mastery</Text>
       <Text style={styles.sub}>Uniform Investment Adviser Law Exam</Text>
 

@@ -11,6 +11,7 @@ import {
   StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { spacing, radius, font, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -25,6 +26,7 @@ export function Screen({
   contentStyle,
   padded = true,
   topInset = false,
+  settingsGear = false,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
@@ -32,6 +34,8 @@ export function Screen({
   padded?: boolean;
   /** Pad for the status bar on screens that have no navigation header. */
   topInset?: boolean;
+  /** Overlay a settings gear in the top-right that opens the Settings screen. */
+  settingsGear?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const styles = useStyles();
@@ -41,18 +45,39 @@ export function Screen({
     paddingTop: topInset ? insets.top + spacing.sm : 0,
     paddingBottom: insets.bottom + spacing.xxl,
   };
-  if (scroll) {
-    return (
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={[base, contentStyle]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {children}
-      </ScrollView>
-    );
-  }
-  return <View style={[styles.flex, base, contentStyle]}>{children}</View>;
+  const body = scroll ? (
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={[base, contentStyle]}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[styles.flex, base, contentStyle]}>{children}</View>
+  );
+  if (!settingsGear) return body;
+  return (
+    <View style={styles.flex}>
+      {body}
+      <ScreenSettingsGear top={insets.top + spacing.sm} />
+    </View>
+  );
+}
+
+/** Floating top-right gear that opens the Settings stack screen. */
+function ScreenSettingsGear({ top }: { top: number }) {
+  const { colors } = useTheme();
+  const navigation = useNavigation<any>();
+  return (
+    <Pressable
+      onPress={() => navigation.navigate('Settings')}
+      hitSlop={12}
+      style={{ position: 'absolute', top, right: spacing.lg, padding: 4 }}
+    >
+      <Text style={{ fontSize: 22, color: colors.textMuted }}>⚙</Text>
+    </Pressable>
+  );
 }
 
 export function Card({

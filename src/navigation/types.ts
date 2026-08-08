@@ -62,6 +62,7 @@ export type RootStackParamList = {
   };
   Math: undefined;
   MathTopic: { topicId: string };
+  Settings: undefined;
   ModelManager: undefined;
   About: undefined;
   MarkdownPreview: undefined;
@@ -72,5 +73,5 @@ export type TabParamList = {
   Learn: undefined;
   ExamTab: undefined;
   Watch: undefined;
-  Settings: undefined;
+  Flashcards: undefined;
 };

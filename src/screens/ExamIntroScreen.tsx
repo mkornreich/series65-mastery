@@ -20,7 +20,7 @@ export default function ExamIntroScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <Screen topInset>
+    <Screen topInset settingsGear>
       <Text style={styles.h1}>Practice Exam</Text>
       <Text style={styles.sub}>A full-length, blueprint-weighted mock exam.</Text>
 
