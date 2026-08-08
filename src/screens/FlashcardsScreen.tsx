@@ -28,6 +28,7 @@ interface FCard {
   formulaLatex?: string;
   summary?: string;
   formulaComponentId?: string;
+  formulaTopicId?: string;
   // question
   answer?: string;
   explanation?: string;
@@ -80,6 +81,7 @@ export default function FlashcardsScreen() {
         formulaLatex: t.formulaLatex,
         summary: t.summary,
         formulaComponentId: t.homeComponentId,
+        formulaTopicId: t.id,
       })),
     [],
   );
@@ -160,6 +162,23 @@ export default function FlashcardsScreen() {
     [llm.available, navigation],
   );
 
+  // Jump to where the card's content is taught (formula page or topic notes).
+  // Term cards have no single home section, so they get no review link.
+  const reviewNav = useCallback(
+    (c: FCard): (() => void) | null => {
+      if (c.kind === 'formula' && c.formulaTopicId) {
+        const topicId = c.formulaTopicId;
+        return () => navigation.navigate('MathTopic', { topicId });
+      }
+      if (c.kind === 'question' && c.question) {
+        const componentId = c.question.componentId;
+        return () => navigation.navigate('Topic', { componentId });
+      }
+      return null;
+    },
+    [navigation],
+  );
+
   // ── Deck picker ────────────────────────────────────────────────────────────
   if (!deck) {
     return (
@@ -192,6 +211,7 @@ export default function FlashcardsScreen() {
   const meta = DECK_META.find((d) => d.id === deck)!;
   const card = order.length ? activeCards[order[pos]] : null;
   const isStarred = card ? starred.has(card.id) : false;
+  const review = card ? reviewNav(card) : null;
 
   return (
     <Screen topInset>
@@ -245,6 +265,14 @@ export default function FlashcardsScreen() {
             onPress={() => askAi(card)}
             style={{ marginTop: spacing.md }}
           />
+          {review && (
+            <AppButton
+              title="📖 Review this topic"
+              variant="ghost"
+              onPress={review}
+              style={{ marginTop: spacing.sm }}
+            />
+          )}
 
           <View style={styles.navRow}>
             <AppButton title="‹ Prev" variant="secondary" disabled={pos === 0} onPress={() => go(-1)} style={styles.navBtn} />

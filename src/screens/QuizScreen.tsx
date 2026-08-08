@@ -408,6 +408,12 @@ export default function QuizScreen({ route, navigation }: Props) {
               />
             </View>
           )}
+          <AppButton
+            title="📖 Review this topic"
+            variant="ghost"
+            style={{ marginTop: spacing.sm }}
+            onPress={() => navigation.navigate('Topic', { componentId: current.componentId })}
+          />
         </Card>
       )}
 

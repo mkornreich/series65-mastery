@@ -185,6 +185,12 @@ export default function ExamResultScreen({ route, navigation }: Props) {
                     }
                   />
                 )}
+                <AppButton
+                  title="📖 Review this topic"
+                  variant="ghost"
+                  style={{ marginTop: spacing.sm }}
+                  onPress={() => navigation.navigate('Topic', { componentId: q.componentId })}
+                />
               </Card>
             );
           })}

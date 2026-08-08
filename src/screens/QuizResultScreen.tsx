@@ -80,7 +80,10 @@ export default function QuizResultScreen({ route, navigation }: Props) {
           {missed.map((r, i) => {
             const comp = COMPONENT_BY_ID[r.question.componentId];
             return (
-              <Card key={i}>
+              <Card
+                key={i}
+                onPress={() => navigation.navigate('Topic', { componentId: r.question.componentId })}
+              >
                 <Text style={styles.topic}>{comp?.title}</Text>
                 <Body style={{ fontWeight: '600', marginBottom: spacing.sm }}>
                   {r.question.stem}
@@ -97,6 +100,7 @@ export default function QuizResultScreen({ route, navigation }: Props) {
                 )}
                 <Divider />
                 <Body muted>{r.question.explanation}</Body>
+                <Text style={styles.reviewLink}>📖 Review this topic ›</Text>
               </Card>
             );
           })}
@@ -121,4 +125,5 @@ const makeStyles = (colors: ThemeColors) =>
   topic: { color: colors.textMuted, fontSize: font.small, fontWeight: '700', marginBottom: 4 },
   correctLine: { color: colors.success, fontSize: font.small, fontWeight: '600', marginBottom: 2 },
   yourLine: { color: colors.danger, fontSize: font.small, fontWeight: '600' },
+  reviewLink: { color: colors.primary, fontSize: font.small, fontWeight: '700', marginTop: spacing.md },
 });
