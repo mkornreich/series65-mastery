@@ -33,6 +33,8 @@ export interface ProgressState {
   flagged: string[];
   /** Watch-tab video ids the user has marked as watched. */
   watchedVideos: string[];
+  /** Flashcard ids the user has starred for review. */
+  starredCards: string[];
   examHistory: ExamResult[];
   totalAnswered: number;
   totalCorrect: number;
@@ -47,6 +49,7 @@ interface StoreState {
   recordAnswer: (q: Question, chosenIndex: number) => void;
   toggleFlag: (qid: string) => void;
   toggleWatchedVideo: (id: string) => void;
+  toggleStarredCard: (id: string) => void;
   addExamResult: (r: ExamResult) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   setGenParams: (patch: Partial<GenerationParams>) => void;
@@ -73,6 +76,7 @@ const EMPTY_PROGRESS: ProgressState = {
   missed: [],
   flagged: [],
   watchedVideos: [],
+  starredCards: [],
   examHistory: [],
   totalAnswered: 0,
   totalCorrect: 0,
@@ -162,6 +166,14 @@ export const useStore = create<StoreState>()(
           const has = cur.includes(id);
           const watchedVideos = has ? cur.filter((x) => x !== id) : [id, ...cur];
           return { progress: { ...s.progress, watchedVideos } };
+        }),
+
+      toggleStarredCard: (id) =>
+        set((s) => {
+          const cur = s.progress.starredCards ?? [];
+          const has = cur.includes(id);
+          const starredCards = has ? cur.filter((x) => x !== id) : [id, ...cur];
+          return { progress: { ...s.progress, starredCards } };
         }),
 
       addExamResult: (r) =>
