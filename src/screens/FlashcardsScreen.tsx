@@ -229,32 +229,37 @@ export default function FlashcardsScreen() {
         <>
           <Pressable onPress={() => setFlipped((f) => !f)}>
             <Card accent={meta.accent} style={styles.cardFace}>
-              <Text style={styles.faceLabel}>
-                {flipped ? (card.kind === 'term' ? 'DEFINITION' : 'ANSWER') : card.kind.toUpperCase()}
-              </Text>
-              <Pressable onPress={() => toggleStar(card.id)} hitSlop={12} style={styles.starBtn}>
-                <Text style={[styles.starIcon, { color: isStarred ? colors.warn : colors.textFaint }]}>
-                  {isStarred ? '★' : '☆'}
+              <View style={styles.cardTop}>
+                <Text style={styles.faceLabel}>
+                  {flipped ? (card.kind === 'term' ? 'DEFINITION' : 'ANSWER') : card.kind.toUpperCase()}
                 </Text>
-              </Pressable>
+                <Pressable onPress={() => toggleStar(card.id)} hitSlop={12}>
+                  <Text style={[styles.starIcon, { color: isStarred ? colors.warn : colors.textFaint }]}>
+                    {isStarred ? '★' : '☆'}
+                  </Text>
+                </Pressable>
+              </View>
 
-              {!flipped ? (
-                <Text style={styles.frontText}>{card.front}</Text>
-              ) : card.kind === 'formula' ? (
-                <View>
-                  <View style={styles.formulaWrap}>
-                    <Markdown source={`$$${card.formulaLatex}$$`} baseSize={font.body} />
+              <View style={styles.cardBody}>
+                {!flipped ? (
+                  <Text style={styles.frontText}>{card.front}</Text>
+                ) : card.kind === 'formula' ? (
+                  <View>
+                    <View style={styles.formulaWrap}>
+                      <Markdown source={`$$${card.formulaLatex}$$`} baseSize={font.body} />
+                    </View>
+                    <Body style={{ marginTop: spacing.md }}>{card.summary}</Body>
                   </View>
-                  <Body style={{ marginTop: spacing.md }}>{card.summary}</Body>
-                </View>
-              ) : card.kind === 'term' ? (
-                <Body>{card.definition}</Body>
-              ) : (
-                <View>
-                  <Body style={{ fontWeight: '800', color: colors.success }}>{card.answer}</Body>
-                  <Body muted style={{ marginTop: spacing.sm }}>{card.explanation}</Body>
-                </View>
-              )}
+                ) : card.kind === 'term' ? (
+                  <Body>{card.definition}</Body>
+                ) : (
+                  <View>
+                    <Body style={{ fontWeight: '800', color: colors.success }}>{card.answer}</Body>
+                    <Body muted style={{ marginTop: spacing.sm }}>{card.explanation}</Body>
+                  </View>
+                )}
+              </View>
+
               <Text style={styles.tapHint}>{flipped ? 'Tap to hide' : 'Tap to reveal'}</Text>
             </Card>
           </Pressable>
@@ -308,18 +313,16 @@ const makeStyles = (colors: ThemeColors) =>
     },
     link: { color: colors.primary, fontSize: font.small, fontWeight: '700' },
     progress: { color: colors.textMuted, fontSize: font.small, fontWeight: '700' },
-    cardFace: { minHeight: 260, justifyContent: 'center' },
-    faceLabel: {
-      position: 'absolute',
-      top: spacing.md,
-      left: spacing.lg,
-      color: colors.textFaint,
-      fontSize: font.tiny,
-      fontWeight: '800',
-      letterSpacing: 1,
+    cardFace: { minHeight: 340 },
+    cardTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing.sm,
     },
-    starBtn: { position: 'absolute', top: spacing.sm, right: spacing.md, padding: 4 },
+    faceLabel: { color: colors.textFaint, fontSize: font.tiny, fontWeight: '800', letterSpacing: 1, marginTop: 2 },
     starIcon: { fontSize: 24, fontWeight: '800' },
+    cardBody: { flex: 1, justifyContent: 'center', paddingVertical: spacing.sm },
     frontText: { color: colors.text, fontSize: font.h3, fontWeight: '700', lineHeight: 26, textAlign: 'center' },
     formulaWrap: {
       backgroundColor: colors.bgAlt,
@@ -328,14 +331,7 @@ const makeStyles = (colors: ThemeColors) =>
       paddingHorizontal: spacing.md,
       overflow: 'hidden',
     },
-    tapHint: {
-      position: 'absolute',
-      bottom: spacing.md,
-      alignSelf: 'center',
-      color: colors.textFaint,
-      fontSize: font.tiny,
-      fontWeight: '600',
-    },
+    tapHint: { alignSelf: 'center', color: colors.textFaint, fontSize: font.tiny, fontWeight: '600', marginTop: spacing.md },
     navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
     navBtn: { flex: 1 },
   });
