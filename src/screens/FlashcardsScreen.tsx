@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, Pressable, BackHandler } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Question } from '../types';
@@ -119,6 +119,22 @@ export default function FlashcardsScreen() {
   const [order, setOrder] = useState<number[]>([]);
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
+
+  // When viewing a deck's cards, the hardware/gesture back returns to the deck
+  // list instead of leaving the Flashcards tab.
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        if (deck) {
+          setDeck(null);
+          return true;
+        }
+        return false;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+      return () => sub.remove();
+    }, [deck]),
+  );
 
   const openDeck = useCallback(
     (id: DeckId, doShuffle: boolean) => {
