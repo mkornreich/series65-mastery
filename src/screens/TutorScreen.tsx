@@ -51,6 +51,34 @@ function suggestionsFor(topic?: string): string[] {
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
+// A bare greeting / thanks / acknowledgement. The model otherwise treats it as
+// "start the lesson" and dumps an unprompted explanation, so we answer these
+// briefly ourselves instead of generating.
+const SMALL_TALK = new Set([
+  'hi', 'hello', 'hey', 'heya', 'hiya', 'yo', 'sup', 'howdy', 'hola',
+  'hi there', 'hey there', 'hello there', 'hi tutor', 'hello tutor',
+  'good morning', 'good afternoon', 'good evening', 'morning', 'gm', 'gn',
+  'thanks', 'thank you', 'thankyou', 'thx', 'ty', 'tysm', 'cheers', 'much appreciated',
+  'ok', 'okay', 'k', 'kk', 'cool', 'nice', 'great', 'awesome', 'got it', 'gotcha',
+  'sounds good', 'perfect', 'lol',
+]);
+
+function isSmallTalk(msg: string): boolean {
+  const t = msg
+    .trim()
+    .toLowerCase()
+    .replace(/[!.…,]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!t || t.includes('?') || t.length > 20) return false;
+  return SMALL_TALK.has(t);
+}
+
+const SMALL_TALK_REPLY =
+  'Hi! I’m your Series 65 tutor. Ask me about any exam topic — like investment ' +
+  'adviser registration, types of risk, or how to work through a specific practice ' +
+  'question — and I’ll explain it.';
+
 /** System-prompt grounding so the tutor answers about the exact question. */
 function questionContext(q: Question, chosenIndex?: number): string {
   const choices = q.choices.map((c, i) => `${LETTERS[i]}. ${c}`).join('\n');
@@ -187,6 +215,20 @@ export default function TutorScreen({ route, navigation }: Props) {
       // The assistant reply lands right after the user turn we're about to add.
       const assistantIndex = history.length + 1;
       setMessages((m) => [...m, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
+
+      // A bare greeting: answer briefly without the model, which would otherwise
+      // launch into an unprompted lesson. (Question mode always goes to the model.)
+      if (!question && isSmallTalk(msg)) {
+        setMessages((m) => {
+          const copy = [...m];
+          copy[copy.length - 1] = { role: 'assistant', content: SMALL_TALK_REPLY };
+          return copy;
+        });
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+        sendingRef.current = false;
+        return;
+      }
+
       setSending(true);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
 
