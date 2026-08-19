@@ -9,6 +9,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getComponent, getSubject } from '../data/curriculum';
 import { STUDY_NOTES } from '../data/studyNotes';
+import { textbookSectionForComponent } from '../data/textbook';
 import {
   masteryScore,
   masteryLevel,
@@ -58,6 +59,7 @@ export default function TopicScreen({ route, navigation }: Props) {
   }
 
   const notes = STUDY_NOTES[componentId];
+  const tbSection = textbookSectionForComponent(componentId);
   const score = masteryScore(mastery);
   const level = masteryLevel(mastery);
   const coverage = Math.round(componentCoverage(mastery) * 100);
@@ -130,6 +132,22 @@ export default function TopicScreen({ route, navigation }: Props) {
         variant="ghost"
         onPress={() => navigation.navigate('Tutor', { topicTitle: component.title, componentId })}
       />
+      {tbSection ? (
+        <>
+          <View style={{ height: spacing.sm }} />
+          <AppButton
+            title="Read in the textbook"
+            icon="📖"
+            variant="ghost"
+            onPress={() =>
+              navigation.navigate('TextbookSection', {
+                anchor: tbSection.anchor,
+                title: tbSection.section,
+              })
+            }
+          />
+        </>
+      ) : null}
 
       {notes ? (
         <Card style={{ marginTop: spacing.lg }}>

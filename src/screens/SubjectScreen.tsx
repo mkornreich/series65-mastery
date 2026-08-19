@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo } from 'react';
-import { Text, StyleSheet, View } from 'react-native';
+import { Text, StyleSheet, View, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card, AppButton, Pill } from '../components/ui';
@@ -8,6 +8,7 @@ import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
+import { textbookSectionForComponent } from '../data/textbook';
 import { masteryScore, masteryLevel, subjectMastery } from '../mastery/engine';
 import { bankBySubject } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
@@ -102,6 +103,7 @@ export default function SubjectScreen({ route, navigation }: Props) {
         const m = mastery[c.id];
         const score = masteryScore(m);
         const level = masteryLevel(m);
+        const tb = textbookSectionForComponent(c.id);
         return (
           <Card key={c.id} onPress={() => navigation.navigate('Topic', { componentId: c.id })}>
             <View style={styles.topRow}>
@@ -118,6 +120,17 @@ export default function SubjectScreen({ route, navigation }: Props) {
             <View style={{ marginTop: spacing.sm }}>
               <MasteryBar score={score} level={level} showLabel={false} height={6} />
             </View>
+            {tb ? (
+              <Pressable
+                onPress={() =>
+                  navigation.navigate('TextbookSection', { anchor: tb.anchor, title: tb.section })
+                }
+                hitSlop={8}
+                style={styles.tbLink}
+              >
+                <Text style={styles.tbLinkText}>📖 Read in the textbook</Text>
+              </Pressable>
+            ) : null}
           </Card>
         );
       })}
@@ -140,4 +153,12 @@ const makeStyles = (colors: ThemeColors) =>
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   topicTitle: { flex: 1, color: colors.text, fontSize: font.body, fontWeight: '700', paddingRight: spacing.sm },
   topicMeta: { color: colors.textMuted, fontSize: font.small, marginTop: 4 },
+  tbLink: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignSelf: 'flex-start',
+  },
+  tbLinkText: { color: colors.accent, fontSize: font.small, fontWeight: '700' },
 });
