@@ -1,11 +1,16 @@
-import React, { useMemo, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Screen } from '../components/ui';
+import { Screen, HighlightText } from '../components/ui';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
-import { textbookSections, partLabel, TextbookSectionMeta } from '../data/textbook';
+import {
+  textbookSections,
+  partLabel,
+  searchTextbook,
+  TextbookSectionMeta,
+} from '../data/textbook';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Textbook'>;
 
@@ -14,9 +19,9 @@ export default function TextbookScreen({ route, navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const scrollToPart = route.params?.scrollToPart;
   const scrollRef = useRef<ScrollView | null>(null);
-  // Guard so we only auto-scroll to the requested Part once (its heading's
-  // onLayout can fire more than once, e.g. on theme change).
   const scrolledRef = useRef(false);
+  const [query, setQuery] = useState('');
+  const q = query.trim();
 
   const groups = useMemo(() => {
     const secs = textbookSections();
@@ -32,6 +37,11 @@ export default function TextbookScreen({ route, navigation }: Props) {
     return byPart;
   }, []);
 
+  const results = useMemo(() => (q.length >= 2 ? searchTextbook(q) : []), [q]);
+
+  const openSection = (anchor: string, title: string, withQuery?: string) =>
+    navigation.navigate('TextbookSection', { anchor, title, query: withQuery });
+
   return (
     <Screen scrollViewRef={scrollRef}>
       <Text style={styles.h1}>📖 Series 65 Textbook</Text>
@@ -40,39 +50,82 @@ export default function TextbookScreen({ route, navigation }: Props) {
         AI tutor cites these same sections.
       </Text>
 
-      {groups.map((g) => (
-        <View
-          key={g.part || 'appendix'}
-          style={styles.group}
-          onLayout={
-            scrollToPart && g.part === scrollToPart
-              ? (e) => {
-                  if (scrolledRef.current) return;
-                  scrolledRef.current = true;
-                  const y = Math.max(0, e.nativeEvent.layout.y - spacing.md);
-                  scrollRef.current?.scrollTo({ y, animated: false });
-                }
-              : undefined
-          }
-        >
-          <Text style={styles.part}>{partLabel(g.part)}</Text>
-          {g.items.map((s) => (
+      <View style={styles.searchRow}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search the whole textbook…"
+          placeholderTextColor={colors.textFaint}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+          returnKeyType="search"
+        />
+        {query ? (
+          <Pressable onPress={() => setQuery('')} hitSlop={10}>
+            <Text style={styles.clear}>✕</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {q.length >= 2 ? (
+        <View style={styles.group}>
+          <Text style={styles.part}>
+            {results.length
+              ? `${results.length} section${results.length === 1 ? '' : 's'} match “${q}”`
+              : `No matches for “${q}”`}
+          </Text>
+          {results.map((r) => (
             <Pressable
-              key={s.anchor}
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              onPress={() =>
-                navigation.navigate('TextbookSection', {
-                  anchor: s.anchor,
-                  title: s.section,
-                })
-              }
+              key={r.anchor}
+              style={({ pressed }) => [styles.result, pressed && styles.rowPressed]}
+              onPress={() => openSection(r.anchor, r.section, q)}
             >
-              <Text style={styles.rowText}>{s.section}</Text>
-              <Text style={styles.chev}>›</Text>
+              <View style={styles.resultHead}>
+                <Text style={styles.resultTitle}>
+                  {(r.part ? r.part + ' · ' : '') + r.section}
+                </Text>
+                <Text style={styles.count}>{r.matchCount}</Text>
+              </View>
+              <HighlightText
+                text={r.snippet}
+                query={q}
+                style={styles.snippet}
+                numberOfLines={3}
+              />
             </Pressable>
           ))}
         </View>
-      ))}
+      ) : (
+        groups.map((g) => (
+          <View
+            key={g.part || 'appendix'}
+            style={styles.group}
+            onLayout={
+              scrollToPart && g.part === scrollToPart
+                ? (e) => {
+                    if (scrolledRef.current) return;
+                    scrolledRef.current = true;
+                    const y = Math.max(0, e.nativeEvent.layout.y - spacing.md);
+                    scrollRef.current?.scrollTo({ y, animated: false });
+                  }
+                : undefined
+            }
+          >
+            <Text style={styles.part}>{partLabel(g.part)}</Text>
+            {g.items.map((s) => (
+              <Pressable
+                key={s.anchor}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                onPress={() => openSection(s.anchor, s.section)}
+              >
+                <Text style={styles.rowText}>{s.section}</Text>
+                <Text style={styles.chev}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+        ))
+      )}
     </Screen>
   );
 }
@@ -86,6 +139,24 @@ const makeStyles = (colors: ThemeColors) =>
       lineHeight: 20,
       marginTop: spacing.xs,
     },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      marginTop: spacing.md,
+    },
+    searchIcon: { fontSize: font.body, marginRight: spacing.sm },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontSize: font.body,
+      paddingVertical: spacing.sm,
+    },
+    clear: { color: colors.textFaint, fontSize: font.body, paddingHorizontal: 4 },
     group: { marginTop: spacing.lg },
     part: {
       color: colors.accent,
@@ -109,4 +180,25 @@ const makeStyles = (colors: ThemeColors) =>
     rowPressed: { opacity: 0.6 },
     rowText: { flex: 1, color: colors.text, fontSize: font.body, fontWeight: '600' },
     chev: { color: colors.textFaint, fontSize: font.h3, marginLeft: spacing.sm },
+    result: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    resultHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+    resultTitle: { flex: 1, color: colors.accent, fontSize: font.small, fontWeight: '700' },
+    count: {
+      color: colors.textMuted,
+      fontSize: font.tiny,
+      fontWeight: '800',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.pill,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      overflow: 'hidden',
+    },
+    snippet: { color: colors.textMuted, fontSize: font.small, lineHeight: 19 },
   });

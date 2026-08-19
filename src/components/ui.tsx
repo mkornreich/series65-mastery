@@ -111,6 +111,52 @@ function ScreenTopActions({ top }: { top: number }) {
   );
 }
 
+/** Render `text` with every case-insensitive occurrence of `query` highlighted. */
+export function HighlightText({
+  text,
+  query,
+  style,
+  numberOfLines,
+}: {
+  text: string;
+  query?: string;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+}) {
+  const { colors } = useTheme();
+  const q = (query ?? '').toLowerCase();
+  if (!q) {
+    return (
+      <Text style={style} numberOfLines={numberOfLines}>
+        {text}
+      </Text>
+    );
+  }
+  const lc = text.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let i = 0;
+  let k = 0;
+  while (i < text.length) {
+    const idx = lc.indexOf(q, i);
+    if (idx < 0) {
+      parts.push(text.slice(i));
+      break;
+    }
+    if (idx > i) parts.push(text.slice(i, idx));
+    parts.push(
+      <Text key={k++} style={{ backgroundColor: `${colors.accent}44`, color: colors.text, fontWeight: '800' }}>
+        {text.slice(idx, idx + q.length)}
+      </Text>
+    );
+    i = idx + q.length;
+  }
+  return (
+    <Text style={style} numberOfLines={numberOfLines}>
+      {parts}
+    </Text>
+  );
+}
+
 export function Card({
   children,
   style,

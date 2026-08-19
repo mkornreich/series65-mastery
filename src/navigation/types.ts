@@ -65,7 +65,7 @@ export type RootStackParamList = {
   /** In-app textbook table of contents; optionally scroll to a Part on open. */
   Textbook: { scrollToPart?: string } | undefined;
   /** A single textbook section, addressed by its RAG citation anchor. */
-  TextbookSection: { anchor: string; title?: string };
+  TextbookSection: { anchor: string; title?: string; query?: string };
   Settings: undefined;
   ModelManager: undefined;
   About: undefined;

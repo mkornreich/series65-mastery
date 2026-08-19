@@ -92,3 +92,71 @@ export function textbookSectionForComponent(
 export function textbookPartForSubject(subjectId: string): string | null {
   return PART_OF_SUBJECT[subjectId] ?? null;
 }
+
+// ---- Search ----
+
+export interface TextbookSearchResult extends TextbookSectionMeta {
+  /** A short context excerpt around the first match (whitespace-collapsed). */
+  snippet: string;
+  /** Total occurrences of the query across the section. */
+  matchCount: number;
+}
+
+function snippetAround(text: string, idx: number, qlen: number, pad = 64): string {
+  const start = Math.max(0, idx - pad);
+  const end = Math.min(text.length, idx + qlen + pad);
+  let s = text.slice(start, end).replace(/\s+/g, ' ').trim();
+  if (start > 0) s = '…' + s;
+  if (end < text.length) s = s + '…';
+  return s;
+}
+
+function countOccurrences(haystackLower: string, needleLower: string): number {
+  let n = 0;
+  let i = haystackLower.indexOf(needleLower);
+  while (i >= 0) {
+    n++;
+    i = haystackLower.indexOf(needleLower, i + needleLower.length);
+  }
+  return n;
+}
+
+/**
+ * Search the whole textbook for a query. Returns one result per matching
+ * section (most matches first), each with a context snippet and match count.
+ */
+export function searchTextbook(query: string, maxResults = 60): TextbookSearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const bySection = new Map<
+    string,
+    { meta: TextbookSectionMeta; matchCount: number; snippet: string }
+  >();
+  for (const c of TEXTBOOK_CHUNKS) {
+    const lc = c.text.toLowerCase();
+    const idx = lc.indexOf(q);
+    if (idx < 0) continue;
+    const count = countOccurrences(lc, q);
+    const existing = bySection.get(c.anchor);
+    if (existing) {
+      existing.matchCount += count;
+    } else {
+      bySection.set(c.anchor, {
+        meta: { part: c.part, section: c.section, anchor: c.anchor },
+        matchCount: count,
+        snippet: snippetAround(c.text, idx, q.length),
+      });
+    }
+  }
+  return [...bySection.values()]
+    .sort((a, b) => b.matchCount - a.matchCount)
+    .slice(0, maxResults)
+    .map((e) => ({ ...e.meta, snippet: e.snippet, matchCount: e.matchCount }));
+}
+
+/** The paragraphs (source chunks) of a section, in document order. */
+export function sectionChunks(anchor: string): string[] {
+  return TEXTBOOK_CHUNKS.filter((c) => c.anchor === anchor)
+    .sort((a, b) => a.id - b.id)
+    .map((c) => c.text);
+}
