@@ -62,6 +62,10 @@ export type RootStackParamList = {
   };
   Math: undefined;
   MathTopic: { topicId: string };
+  /** In-app textbook table of contents. */
+  Textbook: undefined;
+  /** A single textbook section, addressed by its RAG citation anchor. */
+  TextbookSection: { anchor: string; title?: string };
   Settings: undefined;
   ModelManager: undefined;
   About: undefined;

@@ -22,6 +22,8 @@ import ExamResultScreen from '../screens/ExamResultScreen';
 import TutorScreen from '../screens/TutorScreen';
 import MathScreen from '../screens/MathScreen';
 import MathTopicScreen from '../screens/MathTopicScreen';
+import TextbookScreen from '../screens/TextbookScreen';
+import TextbookSectionScreen from '../screens/TextbookSectionScreen';
 import ModelManagerScreen from '../screens/ModelManagerScreen';
 import AboutScreen from '../screens/AboutScreen';
 import MarkdownPreviewScreen from '../screens/MarkdownPreviewScreen';
@@ -111,6 +113,12 @@ export default function RootNavigator() {
       <Stack.Screen name="Tutor" component={TutorScreen} options={{ title: 'AI Tutor' }} />
       <Stack.Screen name="Math" component={MathScreen} options={{ title: 'Math & formulas' }} />
       <Stack.Screen name="MathTopic" component={MathTopicScreen} options={{ title: 'Formula' }} />
+      <Stack.Screen name="Textbook" component={TextbookScreen} options={{ title: 'Textbook' }} />
+      <Stack.Screen
+        name="TextbookSection"
+        component={TextbookSectionScreen}
+        options={{ title: 'Textbook' }}
+      />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       <Stack.Screen name="ModelManager" component={ModelManagerScreen} options={{ title: 'AI models' }} />
       <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />

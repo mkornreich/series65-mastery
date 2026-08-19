@@ -15,7 +15,6 @@ import {
   ScrollView,
   Keyboard,
   Animated,
-  Linking,
   KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +27,7 @@ import { useLLM } from '../llm/LLMProvider';
 import { ChatMessage, Question } from '../types';
 import { AppButton } from '../components/ui';
 import { Markdown } from '../components/markdown';
-import { buildTutorContext, sourceUrl, Source } from '../llm/rag';
+import { buildTutorContext, Source } from '../llm/rag';
 import { TUTOR_EMPTY_FALLBACK } from '../llm/prompts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
@@ -361,7 +360,12 @@ export default function TutorScreen({ route, navigation }: Props) {
                   <Pressable
                     key={src.anchor + src.label}
                     style={styles.sourceChip}
-                    onPress={() => Linking.openURL(sourceUrl(src.anchor)).catch(() => {})}
+                    onPress={() =>
+                      navigation.navigate('TextbookSection', {
+                        anchor: src.anchor,
+                        title: src.label,
+                      })
+                    }
                   >
                     <Text style={styles.sourceText} numberOfLines={2}>
                       📖 {src.label}

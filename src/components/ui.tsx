@@ -60,23 +60,42 @@ export function Screen({
   return (
     <View style={styles.flex}>
       {body}
-      <ScreenSettingsGear top={insets.top + spacing.sm} />
+      <ScreenTopActions top={insets.top + spacing.sm} />
     </View>
   );
 }
 
-/** Floating top-right gear that opens the Settings stack screen. */
-function ScreenSettingsGear({ top }: { top: number }) {
+/** Floating top-right actions: the textbook, then the settings gear. */
+function ScreenTopActions({ top }: { top: number }) {
   const { colors } = useTheme();
   const navigation = useNavigation<any>();
   return (
-    <Pressable
-      onPress={() => navigation.navigate('Settings')}
-      hitSlop={12}
-      style={{ position: 'absolute', top, right: spacing.lg, padding: 4 }}
+    <View
+      style={{
+        position: 'absolute',
+        top,
+        right: spacing.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
     >
-      <Text style={{ fontSize: 22, color: colors.textMuted }}>⚙</Text>
-    </Pressable>
+      <Pressable
+        onPress={() => navigation.navigate('Textbook')}
+        hitSlop={12}
+        style={{ padding: 4, marginRight: spacing.md }}
+        accessibilityLabel="Open the Series 65 textbook"
+      >
+        <Text style={{ fontSize: 20 }}>📖</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => navigation.navigate('Settings')}
+        hitSlop={12}
+        style={{ padding: 4 }}
+        accessibilityLabel="Open settings"
+      >
+        <Text style={{ fontSize: 22, color: colors.textMuted }}>⚙</Text>
+      </Pressable>
+    </View>
   );
 }
 
