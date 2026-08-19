@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Screen, HighlightText } from '../components/ui';
+import { Screen } from '../components/ui';
 import { Markdown } from '../components/markdown';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
@@ -83,7 +83,7 @@ export default function TextbookSectionScreen({ route, navigation }: Props) {
           </Text>
           {matches.map((m, i) => (
             <View key={i} style={styles.passage}>
-              <HighlightText text={m.text.replace(/\s+/g, ' ').trim()} query={q} style={styles.passageText} />
+              <Markdown source={m.text} baseSize={font.body} highlight={q} />
             </View>
           ))}
         </View>

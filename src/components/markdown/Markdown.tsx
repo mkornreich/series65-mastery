@@ -19,6 +19,8 @@ export interface MarkdownProps {
   options?: ParseOptions;
   onLinkPress?: (href: string) => void;
   style?: StyleProp<ViewStyle>;
+  /** Highlight every case-insensitive occurrence of this string in the text. */
+  highlight?: string;
 }
 
 function defaultLinkPress(href: string) {
@@ -56,7 +58,7 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-export function Markdown({ source, baseSize, colors: colorsProp, options, onLinkPress, style }: MarkdownProps) {
+export function Markdown({ source, baseSize, colors: colorsProp, options, onLinkPress, style, highlight }: MarkdownProps) {
   const { colors: themeColors } = useTheme();
   const colors = colorsProp ?? themeColors;
   const size = baseSize ?? font.body;
@@ -65,8 +67,15 @@ export function Markdown({ source, baseSize, colors: colorsProp, options, onLink
   const styles = useMemo(() => makeMarkdownStyles({ colors, baseSize: size }), [colors, size]);
   const doc = useMemo(() => parseDocument(source ?? '', opts), [source, opts]);
   const ctx: InlineContext = useMemo(
-    () => ({ colors, styles, baseSize: size, options: opts, onLinkPress: onLinkPress ?? defaultLinkPress }),
-    [colors, styles, size, opts, onLinkPress]
+    () => ({
+      colors,
+      styles,
+      baseSize: size,
+      options: opts,
+      onLinkPress: onLinkPress ?? defaultLinkPress,
+      highlight: highlight && highlight.length >= 1 ? highlight.toLowerCase() : undefined,
+    }),
+    [colors, styles, size, opts, onLinkPress, highlight]
   );
 
   return (

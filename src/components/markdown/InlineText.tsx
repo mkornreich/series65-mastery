@@ -11,6 +11,36 @@ export interface InlineContext {
   baseSize: number;
   options: ParseOptions;
   onLinkPress?: (href: string) => void;
+  /** Lowercased search term to highlight within text runs (search view). */
+  highlight?: string;
+}
+
+// Split a text run on the (already-lowercased) highlight term, wrapping each
+// match in a highlighted Text. Returns the raw string when there's no term or
+// no match, so normal rendering is byte-for-byte unchanged.
+function withHighlight(text: string, ctx: InlineContext, keyBase: number): React.ReactNode {
+  const q = ctx.highlight;
+  if (!q) return text;
+  const lc = text.toLowerCase();
+  if (!lc.includes(q)) return text;
+  const parts: React.ReactNode[] = [];
+  let i = 0;
+  let k = 0;
+  while (i < text.length) {
+    const idx = lc.indexOf(q, i);
+    if (idx < 0) {
+      parts.push(text.slice(i));
+      break;
+    }
+    if (idx > i) parts.push(text.slice(i, idx));
+    parts.push(
+      <Text key={`h${keyBase}-${k++}`} style={ctx.styles.highlight}>
+        {text.slice(idx, idx + q.length)}
+      </Text>
+    );
+    i = idx + q.length;
+  }
+  return parts;
 }
 
 // A wrapper span shows its style only once its closer has streamed in (default
@@ -29,7 +59,7 @@ function renderSpan(span: SpanNode, key: number, ctx: InlineContext): React.Reac
   const { styles } = ctx;
   switch (span.type) {
     case 'text':
-      return span.value;
+      return withHighlight(span.value, ctx, key);
     case 'break':
       return '\n';
     case 'strong':

@@ -38,6 +38,7 @@ export function makeMarkdownStyles(theme: MarkdownTheme) {
     },
     // inline
     text: { color: colors.text, fontSize: baseSize, lineHeight: Math.round(baseSize * 1.5) } as TextStyle,
+    highlight: { backgroundColor: `${colors.accent}44`, color: colors.text, fontWeight: '800' } as TextStyle,
     strong: { fontWeight: '800' } as TextStyle,
     emphasis: { fontStyle: 'italic' } as TextStyle,
     strike: { textDecorationLine: 'line-through' } as TextStyle,

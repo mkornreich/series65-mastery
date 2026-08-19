@@ -102,10 +102,23 @@ export interface TextbookSearchResult extends TextbookSectionMeta {
   matchCount: number;
 }
 
-function snippetAround(text: string, idx: number, qlen: number, pad = 64): string {
+// Strip Markdown markers so a preview snippet reads as clean prose (the term is
+// re-highlighted by the UI via string search, so positions don't need to match).
+function stripInlineMarkdown(s: string): string {
+  return s
+    .replace(/`+/g, '') // inline code ticks
+    .replace(/[*_~]/g, '') // bold / italic / strikethrough
+    .replace(/#{1,6}\s?/g, '') // heading hashes, incl. inline "#### "
+    .replace(/>\s?/g, '') // blockquote markers
+    .replace(/\|/g, ' ') // table pipes
+    .replace(/\s+/g, ' ') // collapse whitespace
+    .trim();
+}
+
+function snippetAround(text: string, idx: number, qlen: number, pad = 72): string {
   const start = Math.max(0, idx - pad);
   const end = Math.min(text.length, idx + qlen + pad);
-  let s = text.slice(start, end).replace(/\s+/g, ' ').trim();
+  let s = stripInlineMarkdown(text.slice(start, end));
   if (start > 0) s = '…' + s;
   if (end < text.length) s = s + '…';
   return s;
