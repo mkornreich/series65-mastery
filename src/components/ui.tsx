@@ -84,6 +84,14 @@ function ScreenTopActions({ top }: { top: number }) {
       }}
     >
       <Pressable
+        onPress={() => navigation.navigate('Tutor', {})}
+        hitSlop={12}
+        style={{ padding: 4, marginRight: spacing.md }}
+        accessibilityLabel="Ask the AI tutor"
+      >
+        <Text style={{ fontSize: 20 }}>🤖</Text>
+      </Pressable>
+      <Pressable
         onPress={() => navigation.navigate('Textbook')}
         hitSlop={12}
         style={{ padding: 4, marginRight: spacing.md }}

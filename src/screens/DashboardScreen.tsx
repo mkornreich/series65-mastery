@@ -112,6 +112,20 @@ export default function DashboardScreen() {
           })
         }
       />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title="Ask AI tutor"
+        variant="ghost"
+        icon="🤖"
+        onPress={() => navigation.navigate('Tutor', {})}
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title="Read the textbook"
+        variant="ghost"
+        icon="📖"
+        onPress={() => navigation.navigate('Textbook')}
+      />
 
       <Text style={styles.srNote}>
         Spaced repetition resurfaces questions right before you’d forget them, so
