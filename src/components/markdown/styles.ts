@@ -96,6 +96,10 @@ export function makeMarkdownStyles(theme: MarkdownTheme) {
     tableWrap: { marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, overflow: 'hidden' },
     tableRow: { flexDirection: 'row' },
     tableCell: {
+      // Cap cell width so a long cell wraps to a few lines instead of running
+      // off-screen; the table still scrolls horizontally when the total of all
+      // columns exceeds the viewport.
+      maxWidth: 240,
       paddingHorizontal: spacing.sm,
       paddingVertical: 6,
       borderColor: colors.border,

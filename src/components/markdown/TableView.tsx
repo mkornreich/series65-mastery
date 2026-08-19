@@ -36,7 +36,14 @@ export function TableView({ block, styles, ctx }: { block: TableBlock; styles: M
 
   return (
     <View style={styles.tableWrap}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator
+        persistentScrollbar
+        // Let the inner table lay out at its natural width so wide tables scroll
+        // horizontally instead of squishing/clipping their last columns.
+        contentContainerStyle={{ flexGrow: 0 }}
+      >
         <View>
           {renderRow(block.header, true, 0)}
           {block.rows.map((r, i) => renderRow(r, false, i + 1))}
