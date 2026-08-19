@@ -1,5 +1,5 @@
-import React, { useLayoutEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen } from '../components/ui';
@@ -30,10 +30,15 @@ export default function TextbookSectionScreen({ route, navigation }: Props) {
   const [query, setQuery] = useState(route.params.query ?? '');
   const q = query.trim().toLowerCase();
 
+  const scrollRef = useRef<ScrollView | null>(null);
+  // After tapping a search result we clear the query and scroll the full
+  // section to that passage once it lays out.
+  const [pendingScroll, setPendingScroll] = useState<number | null>(null);
+
   const matches = useMemo(() => {
     if (q.length < 2) return [];
     return chunks
-      .map((text) => ({ text, count: countIn(text, q) }))
+      .map((text, index) => ({ index, text, count: countIn(text, q) }))
       .filter((m) => m.count > 0);
   }, [chunks, q]);
   const total = matches.reduce((n, m) => n + m.count, 0);
@@ -41,6 +46,11 @@ export default function TextbookSectionScreen({ route, navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Textbook' });
   }, [navigation]);
+
+  const openPassage = (index: number) => {
+    setQuery('');
+    setPendingScroll(index);
+  };
 
   if (!content) {
     return (
@@ -52,7 +62,7 @@ export default function TextbookSectionScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen>
+    <Screen scrollViewRef={scrollRef}>
       {content.part ? <Text style={styles.part}>{partLabel(content.part)}</Text> : null}
       <Text style={styles.h1}>{content.section}</Text>
 
@@ -75,22 +85,43 @@ export default function TextbookSectionScreen({ route, navigation }: Props) {
       </View>
 
       {q.length >= 2 ? (
-        <View style={styles.body}>
+        <>
           <Text style={styles.matchLabel}>
             {total
-              ? `${total} match${total === 1 ? '' : 'es'} in this section`
+              ? `${total} match${total === 1 ? '' : 'es'} in this section — tap one to read it in context`
               : 'No matches in this section'}
           </Text>
-          {matches.map((m, i) => (
-            <View key={i} style={styles.passage}>
+          {matches.map((m) => (
+            <Pressable
+              key={m.index}
+              style={({ pressed }) => [styles.passage, pressed && styles.passagePressed]}
+              onPress={() => openPassage(m.index)}
+            >
               <Markdown source={m.text} baseSize={font.body} highlight={q} />
-            </View>
+              <Text style={styles.jump}>Read in context ›</Text>
+            </Pressable>
           ))}
-        </View>
+        </>
       ) : (
-        <View style={styles.body}>
-          <Markdown source={content.markdown} baseSize={font.body} />
-        </View>
+        chunks.map((text, index) => (
+          <View
+            key={index}
+            style={index === 0 ? styles.firstChunk : styles.chunk}
+            onLayout={
+              pendingScroll === index
+                ? (e) => {
+                    scrollRef.current?.scrollTo({
+                      y: Math.max(0, e.nativeEvent.layout.y - spacing.md),
+                      animated: false,
+                    });
+                    setPendingScroll(null);
+                  }
+                : undefined
+            }
+          >
+            <Markdown source={text} baseSize={font.body} />
+          </View>
+        ))
       )}
     </Screen>
   );
@@ -126,11 +157,11 @@ const makeStyles = (colors: ThemeColors) =>
       paddingVertical: spacing.sm,
     },
     clear: { color: colors.textFaint, fontSize: font.body, paddingHorizontal: 4 },
-    body: { marginTop: spacing.md },
     matchLabel: {
       color: colors.textMuted,
       fontSize: font.small,
       fontWeight: '700',
+      marginTop: spacing.md,
       marginBottom: spacing.sm,
     },
     passage: {
@@ -141,5 +172,13 @@ const makeStyles = (colors: ThemeColors) =>
       padding: spacing.md,
       marginBottom: spacing.sm,
     },
-    passageText: { color: colors.text, fontSize: font.small, lineHeight: 20 },
+    passagePressed: { opacity: 0.6 },
+    jump: {
+      color: colors.accent,
+      fontSize: font.tiny,
+      fontWeight: '800',
+      marginTop: spacing.sm,
+    },
+    firstChunk: { marginTop: spacing.md },
+    chunk: { marginTop: spacing.sm },
   });
