@@ -160,6 +160,10 @@ export interface LLMModelInfo {
   /** Decode temperature to use for THIS model in the AI tutor. Falls back to the
    *  default tutor temperature (0.25) when unset; set it to override per model. */
   tutorTemperature?: number;
+  /** Hard ceiling on output tokens this model's runtime accepts (e.g. Gemini
+   *  Nano's ML Kit API caps at 256). Unset = only bounded by the context window,
+   *  so capable models keep their larger budgets. */
+  maxOutputTokens?: number;
 }
 
 export interface GenerationParams {

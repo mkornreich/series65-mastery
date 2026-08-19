@@ -28,11 +28,19 @@ export async function isGeminiNanoAvailable(): Promise<boolean> {
   }
 }
 
+// Google's ML Kit GenAI Prompt API rejects the request unless maxOutputTokens is
+// in [1, 256]. Clamp here so no caller can trip that validation error.
+const GEMINI_NANO_MAX_OUTPUT_TOKENS = 256;
+
 export async function geminiGenerate(
   prompt: string,
   temperature = 0.3,
-  maxTokens = 512
+  maxTokens = 256
 ): Promise<string> {
   if (!native) throw new Error('Gemini Nano is not available in this build.');
-  return native.generate(prompt, temperature, maxTokens);
+  const capped = Math.max(
+    1,
+    Math.min(GEMINI_NANO_MAX_OUTPUT_TOKENS, Math.round(maxTokens) || GEMINI_NANO_MAX_OUTPUT_TOKENS)
+  );
+  return native.generate(prompt, temperature, capped);
 }

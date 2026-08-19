@@ -23,6 +23,8 @@ export const GEMINI_NANO: LLMModelInfo = {
   params: 'system',
   quant: 'system',
   contextLength: 4096,
+  // Google's ML Kit GenAI Prompt API hard-caps maxOutputTokens at 256.
+  maxOutputTokens: 256,
   kind: 'aicore',
   builtIn: true,
   recommended: true,

@@ -326,6 +326,10 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
           // tutor uses a sharper, tail-truncating profile). Neither mutates the
           // user's persisted genParams — they are merged into a fresh object.
           const gp = { ...genParams, ...(maxTokens ? { maxTokens } : {}), ...(sampling || {}) };
+          // Respect a model-specific output-token ceiling (e.g. Gemini Nano caps
+          // at 256). Capable models leave it unset and keep their larger budget.
+          const outCap = (activeModelId ? MODEL_BY_ID[activeModelId] : undefined)?.maxOutputTokens;
+          if (outCap && gp.maxTokens > outCap) gp.maxTokens = outCap;
           if (kind === 'aicore') {
             out = await geminiComplete(messages, gp.temperature, gp.maxTokens);
             if (onToken && out) onToken(out);
@@ -388,7 +392,9 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
         try {
           const examples = bankByComponent(component.id);
           const messages = buildGenerateMessages(component, count, examples, avoidStems, focus);
-          const maxTokens = Math.max(768, count * 240);
+          const outCap = (activeModelId ? MODEL_BY_ID[activeModelId] : undefined)?.maxOutputTokens;
+          let maxTokens = Math.max(768, count * 240);
+          if (outCap && maxTokens > outCap) maxTokens = outCap;
           const kind = kindOf(activeModelId);
           let text: string;
           if (kind === 'aicore') {
