@@ -101,9 +101,6 @@ export const AVAILABLE_MODELS: LLMModelInfo[] = [
     kind: 'gguf',
     bundled: true,
     bundledAsset: 'models/smollm2-360m-instruct-q8_0.gguf',
-    // This 360M model copies facts from the RAG excerpts more faithfully at a
-    // lower temperature; larger models use the default 0.4.
-    tutorTemperature: 0.25,
     recommended: true,
   },
   GEMINI_NANO,

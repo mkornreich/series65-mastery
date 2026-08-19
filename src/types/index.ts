@@ -157,8 +157,8 @@ export interface LLMModelInfo {
   bundled?: boolean;
   /** Asset path within android assets, e.g. "models/foo.gguf". */
   bundledAsset?: string;
-  /** Decode temperature to use for THIS model in the AI tutor (small models want
-   *  a lower value to copy facts faithfully). Falls back to 0.4 when unset. */
+  /** Decode temperature to use for THIS model in the AI tutor. Falls back to the
+   *  default tutor temperature (0.25) when unset; set it to override per model. */
   tutorTemperature?: number;
 }
 

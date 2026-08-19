@@ -365,11 +365,11 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       // so prompt + answer still fit and llama.cpp doesn't have to shift context.
       const budget = Math.max(512, Math.min(896, nCtx - 1152));
       // Tutor-only sampling override (persisted genParams + other paths intact):
-      // tail-truncating top_k/min_p prune low-probability invented-fact tokens,
-      // and the temperature is per-model — the tiny SmolLM2-360M uses a lower
-      // 0.25 to copy facts more faithfully, others default to 0.4.
+      // tail-truncating top_k/min_p prune low-probability invented-fact tokens.
+      // Default tutor temperature is a low 0.25 (copies facts from the RAG
+      // excerpts more faithfully); a model may override via tutorTemperature.
       const model = activeModelId ? MODEL_BY_ID[activeModelId] : undefined;
-      const temperature = model?.tutorTemperature ?? 0.4;
+      const temperature = model?.tutorTemperature ?? 0.25;
       return runText(
         buildTutorMessages(topicTitle, history, message, context),
         onToken,
