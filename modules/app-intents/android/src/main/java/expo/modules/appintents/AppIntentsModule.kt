@@ -52,5 +52,31 @@ class AppIntentsModule : Module() {
         }
       }
     }
+
+    // Copy a bundled asset (e.g. a preloaded model) out of the APK to an absolute
+    // filesystem path. Skips if the destination already exists non-empty. Returns
+    // true on success (or if already present).
+    Function("copyAsset") { assetName: String, destPath: String ->
+      val ctx = appContext.reactContext
+      if (ctx == null) {
+        false
+      } else {
+        try {
+          val dest = java.io.File(destPath)
+          if (dest.exists() && dest.length() > 0L) {
+            true
+          } else {
+            dest.parentFile?.mkdirs()
+            val tmp = java.io.File(destPath + ".part")
+            ctx.assets.open(assetName).use { input ->
+              java.io.FileOutputStream(tmp).use { output -> input.copyTo(output, 1 shl 20) }
+            }
+            tmp.renameTo(dest)
+          }
+        } catch (_: Throwable) {
+          false
+        }
+      }
+    }
   }
 }

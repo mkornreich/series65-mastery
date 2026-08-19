@@ -17,8 +17,8 @@ import {
   litertComplete,
   litertDir,
 } from './litertEngine';
-import { MODEL_BY_ID } from '../data/models';
-import { isDownloaded, modelPath } from './modelManager';
+import { AVAILABLE_MODELS, MODEL_BY_ID } from '../data/models';
+import { isDownloaded, modelPath, preloadBundledModel } from './modelManager';
 import {
   buildExplainMessages,
   buildTutorMessages,
@@ -223,6 +223,20 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     setStatus(available ? (activeModelId ? 'idle' : 'no-model') : 'unavailable');
   }, [available, activeModelId, releaseAll]);
 
+  // Preload any model that ships bundled inside the APK, copying it out of
+  // assets into the models dir on first launch so it's ready with no download.
+  // Runs once; each copy is a no-op if the model is already present.
+  const preloadedRef = useRef(false);
+  useEffect(() => {
+    if (preloadedRef.current || !available) return;
+    preloadedRef.current = true;
+    (async () => {
+      for (const m of AVAILABLE_MODELS) {
+        if (m.bundled) await preloadBundledModel(m).catch(() => {});
+      }
+    })();
+  }, [available]);
+
   // Auto-load the active model on startup. Settings are persisted via zustand +
   // AsyncStorage, which rehydrates ASYNCHRONOUSLY — so on the first render the
   // values are still the defaults (activeModelId=null). Depend on the hydrated
@@ -233,12 +247,17 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
     if (autoLoadedRef.current) return;
     (async () => {
       if (!autoLoadModel || !available || !activeModelId) return;
+      const model = isLocalId(activeModelId)
+        ? localLitertModelInfo(localFileName(activeModelId))
+        : MODEL_BY_ID[activeModelId];
+      // If the active model is bundled, make sure it's been copied out of the
+      // APK before we try to load it (first launch may race the preload above).
+      if (model?.bundled && !(await isDownloaded(model))) {
+        await preloadBundledModel(model).catch(() => {});
+      }
       const kind = kindOf(activeModelId);
       let canLoad = kind === 'aicore';
       if (!canLoad) {
-        const model = isLocalId(activeModelId)
-          ? localLitertModelInfo(localFileName(activeModelId))
-          : MODEL_BY_ID[activeModelId];
         canLoad = !!model && (model.local || (await isDownloaded(model)));
       }
       if (canLoad && !autoLoadedRef.current) {

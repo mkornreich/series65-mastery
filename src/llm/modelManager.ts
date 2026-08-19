@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { LLMModelInfo } from '../types';
+import { copyAsset } from '../../modules/app-intents';
 
 // Downloaded GGUF models live under the app's document directory.
 const MODELS_DIR = (FileSystem.documentDirectory ?? '') + 'models/';
@@ -36,6 +37,25 @@ export async function isDownloaded(m: LLMModelInfo): Promise<boolean> {
 export async function downloadedBytes(m: LLMModelInfo): Promise<number> {
   const info = await FileSystem.getInfoAsync(modelPath(m));
   return info.exists ? info.size ?? 0 : 0;
+}
+
+/**
+ * Copy a model that ships bundled inside the APK out of assets and into the
+ * models dir on first launch, so it's ready with no download. No-op if the
+ * model is already present. Returns true if the model is available afterwards.
+ */
+export async function preloadBundledModel(m: LLMModelInfo): Promise<boolean> {
+  if (!m.bundled || !m.bundledAsset) return false;
+  if (await isDownloaded(m)) return true;
+  await ensureModelsDir();
+  // copyAsset needs a plain filesystem path; documentDirectory carries a
+  // file:// scheme that the native File API won't accept.
+  const dest = modelPath(m).replace(/^file:\/\//, '');
+  const ok = copyAsset(m.bundledAsset, dest);
+  if (ok) {
+    await FileSystem.writeAsStringAsync(completeMarker(m), '1').catch(() => {});
+  }
+  return ok && (await isDownloaded(m));
 }
 
 export async function deleteModel(m: LLMModelInfo): Promise<void> {

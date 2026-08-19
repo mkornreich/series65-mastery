@@ -153,6 +153,10 @@ export interface LLMModelInfo {
   local?: boolean;
   /** True if the download source requires Hugging Face auth (gated). */
   gated?: boolean;
+  /** Shipped inside the app; copied out of assets on first launch (no download). */
+  bundled?: boolean;
+  /** Asset path within android assets, e.g. "models/foo.gguf". */
+  bundledAsset?: string;
 }
 
 export interface GenerationParams {

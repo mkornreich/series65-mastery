@@ -84,6 +84,25 @@ const LITERTLM_MODELS: LLMModelInfo[] = [
 ];
 
 export const AVAILABLE_MODELS: LLMModelInfo[] = [
+  // Preloaded, bundled inside the app — ready with no download, works fully
+  // offline. Tiny (360M), so it's grounded with textbook RAG in the AI tutor.
+  {
+    id: 'smollm2-360m-instruct-q8',
+    name: 'SmolLM2 360M (preloaded)',
+    family: 'SmolLM',
+    description:
+      'HuggingFaceTB SmolLM2-360M-Instruct, shipped inside the app — ready instantly, no download, fully offline. Tiny and fast; the AI tutor grounds it in the built-in Series 65 textbook (RAG) to keep answers accurate.',
+    url: 'https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q8_0.gguf',
+    fileName: 'smollm2-360m-instruct-q8_0.gguf',
+    sizeMB: 369,
+    params: '360M',
+    quant: 'Q8_0',
+    contextLength: 4096,
+    kind: 'gguf',
+    bundled: true,
+    bundledAsset: 'models/smollm2-360m-instruct-q8_0.gguf',
+    recommended: true,
+  },
   GEMINI_NANO,
   ...LITERTLM_MODELS,
   {

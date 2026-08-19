@@ -8,6 +8,7 @@ import {
   isDownloaded,
   startDownload,
   deleteModel,
+  preloadBundledModel,
   DownloadController,
 } from '../llm/modelManager';
 import { geminiSupported, geminiAvailable } from '../llm/geminiEngine';
@@ -72,6 +73,21 @@ export default function ModelManagerScreen() {
     } catch (e: any) {
       patch(m.id, { downloading: false });
       Alert.alert('Download failed', e?.message ?? 'Could not download the model.');
+    }
+  };
+
+  // Copy a bundled model out of the APK assets (no network). Used if a preload
+  // hasn't finished yet, or the user deleted it and wants it back.
+  const preload = async (m: LLMModelInfo) => {
+    patch(m.id, { downloading: true, progress: 0 });
+    try {
+      const ok = await preloadBundledModel(m);
+      patch(m.id, { downloading: false, downloaded: ok, progress: ok ? 1 : 0 });
+      if (ok && !activeModelId) setActiveModel(m.id);
+      if (!ok) Alert.alert('Preload failed', 'Could not prepare the bundled model.');
+    } catch (e: any) {
+      patch(m.id, { downloading: false });
+      Alert.alert('Preload failed', e?.message ?? 'Could not prepare the bundled model.');
     }
   };
 
@@ -166,7 +182,12 @@ export default function ModelManagerScreen() {
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            {m.recommended && <Pill label="RECOMMENDED" color={colors.accent} bg={`${colors.accent}22`} />}
+            {m.bundled && <Pill label="PRELOADED" color={colors.success} bg={`${colors.success}22`} />}
+            {m.recommended && (
+              <View style={{ marginTop: m.bundled ? 4 : 0 }}>
+                <Pill label="RECOMMENDED" color={colors.accent} bg={`${colors.accent}22`} />
+              </View>
+            )}
             {isActive && (
               <View style={{ marginTop: 4 }}>
                 <Pill label="ACTIVE" color={colors.success} bg={`${colors.success}22`} />
@@ -196,10 +217,13 @@ export default function ModelManagerScreen() {
         )}
 
         <View style={styles.actions}>
-          {!st.downloaded && !st.downloading && (
+          {!st.downloaded && !st.downloading && m.bundled && (
+            <AppButton title="Preload" icon="✨" onPress={() => preload(m)} style={{ flex: 1 }} />
+          )}
+          {!st.downloaded && !st.downloading && !m.bundled && (
             <AppButton title={`Download (${humanSize(m.sizeMB)})`} icon="⬇" onPress={() => download(m)} style={{ flex: 1 }} />
           )}
-          {st.downloading && (
+          {st.downloading && !m.bundled && (
             <AppButton title="Cancel" variant="danger" onPress={() => cancel(m)} style={{ flex: 1 }} />
           )}
           {st.downloaded && !isActive && (
@@ -217,7 +241,7 @@ export default function ModelManagerScreen() {
           {st.downloaded && isActive && llm.status === 'ready' && (
             <AppButton title="Loaded ✓" variant="secondary" style={{ flex: 1 }} />
           )}
-          {st.downloaded && (
+          {st.downloaded && !m.bundled && (
             <>
               <View style={{ width: spacing.sm }} />
               <AppButton title="Delete" variant="ghost" onPress={() => remove(m)} />
@@ -312,11 +336,13 @@ export default function ModelManagerScreen() {
 
       {(() => {
         const builtIns = AVAILABLE_MODELS.filter((m) => m.builtIn);
+        // Bundled models ship inside the app, so they always belong in the
+        // on-device list — never the "download to add" section.
         const downloaded = AVAILABLE_MODELS.filter(
-          (m) => !m.builtIn && states[m.id]?.downloaded
+          (m) => !m.builtIn && (m.bundled || states[m.id]?.downloaded)
         );
         const toDownload = AVAILABLE_MODELS.filter(
-          (m) => !m.builtIn && !states[m.id]?.downloaded
+          (m) => !m.builtIn && !m.bundled && !states[m.id]?.downloaded
         );
         return (
           <>

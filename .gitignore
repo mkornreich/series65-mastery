@@ -45,3 +45,6 @@ modules/*/android/build/
 
 # Claude Code local settings
 .claude/
+
+# Bundled on-device model (fetched via scripts/fetch-bundled-model.sh, not committed)
+android/app/src/main/assets/models/*.gguf

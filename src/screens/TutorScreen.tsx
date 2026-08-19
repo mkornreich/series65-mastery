@@ -15,6 +15,7 @@ import {
   ScrollView,
   Keyboard,
   Animated,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -25,6 +26,7 @@ import { useLLM } from '../llm/LLMProvider';
 import { ChatMessage, Question } from '../types';
 import { AppButton } from '../components/ui';
 import { Markdown } from '../components/markdown';
+import { buildTutorContext, sourceUrl, Source } from '../llm/rag';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
 
@@ -127,6 +129,9 @@ export default function TutorScreen({ route, navigation }: Props) {
   const llm = useLLM();
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Textbook sections the RAG retriever grounded each assistant reply in, keyed
+  // by that message's index — rendered as tappable citations under the answer.
+  const [msgSources, setMsgSources] = useState<Record<number, Source[]>>({});
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   // Synchronous mirror of `sending`: a double-tap fires two handlers in the same
@@ -170,9 +175,21 @@ export default function TutorScreen({ route, navigation }: Props) {
       sendingRef.current = true;
       setInput('');
       const history = messages;
+      // The assistant reply lands right after the user turn we're about to add.
+      const assistantIndex = history.length + 1;
       setMessages((m) => [...m, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
       setSending(true);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+
+      // RAG: retrieve the most relevant Series 65 textbook sections and feed them
+      // to the model as grounding so it stays faithful and cites real sections.
+      const ragQuery = question ? `${question.stem} ${msg}` : msg;
+      const rag = buildTutorContext(ragQuery, topicTitle);
+      if (rag.sources.length) {
+        setMsgSources((s) => ({ ...s, [assistantIndex]: rag.sources }));
+      }
+      const context = [qContext, rag.context].filter(Boolean).join('\n\n') || undefined;
+
       try {
         const out = await llm.tutor(
           topicTitle,
@@ -189,7 +206,7 @@ export default function TutorScreen({ route, navigation }: Props) {
             });
             scrollRef.current?.scrollToEnd({ animated: false });
           },
-          qContext
+          context
         );
         // If nothing streamed (empty completion), fall back to the resolved text
         // or a clear message so the bubble doesn't stay stuck on "Thinking…".
@@ -222,7 +239,7 @@ export default function TutorScreen({ route, navigation }: Props) {
         setSending(false);
       }
     },
-    [messages, llm, topicTitle, qContext]
+    [messages, llm, topicTitle, qContext, question]
   );
 
   return (
@@ -324,6 +341,22 @@ export default function TutorScreen({ route, navigation }: Props) {
             ) : (
               <Text style={styles.aiText}>…</Text>
             )}
+            {m.role === 'assistant' && !!m.content && msgSources[i]?.length ? (
+              <View style={styles.sources}>
+                <Text style={styles.sourcesLabel}>TEXTBOOK SECTIONS</Text>
+                {msgSources[i].map((src) => (
+                  <Pressable
+                    key={src.anchor + src.label}
+                    style={styles.sourceChip}
+                    onPress={() => Linking.openURL(sourceUrl(src.anchor)).catch(() => {})}
+                  >
+                    <Text style={styles.sourceText} numberOfLines={2}>
+                      📖 {src.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -424,6 +457,29 @@ const makeStyles = (colors: ThemeColors) =>
   userText: { color: colors.onBright, fontSize: font.body, lineHeight: 21, fontWeight: '600' },
   aiText: { color: colors.text, fontSize: font.body, lineHeight: 22 },
   aiTag: { color: colors.accent, fontSize: font.tiny, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  sources: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  sourcesLabel: {
+    color: colors.textFaint,
+    fontSize: font.tiny,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  sourceChip: {
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    marginBottom: 6,
+  },
+  sourceText: { color: colors.accent, fontSize: font.small, fontWeight: '600', lineHeight: 18 },
   thinkingRow: { flexDirection: 'row', alignItems: 'center' },
   thinkingText: { color: colors.textMuted, fontSize: font.small, fontWeight: '600', marginLeft: 6 },
   inputRow: {

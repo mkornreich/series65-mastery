@@ -3,6 +3,7 @@ import { requireNativeModule } from 'expo-modules-core';
 interface AppIntentsNative {
   isAppInstalled(pkg: string): boolean;
   openInApp(url: string, pkg: string): boolean;
+  copyAsset(assetName: string, destPath: string): boolean;
 }
 
 let native: AppIntentsNative | null = null;
@@ -31,6 +32,15 @@ export function isAppInstalled(pkg: string): boolean {
 export function openInApp(url: string, pkg: string): boolean {
   try {
     return !!native && native.openInApp(url, pkg);
+  } catch {
+    return false;
+  }
+}
+
+/** Copy a bundled APK asset to an absolute filesystem path (preloaded models). */
+export function copyAsset(assetName: string, destPath: string): boolean {
+  try {
+    return !!native && native.copyAsset(assetName, destPath);
   } catch {
     return false;
   }

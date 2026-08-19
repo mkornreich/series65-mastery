@@ -57,8 +57,13 @@ interface StoreState {
   resetProgress: () => void;
 }
 
+/** The preloaded model that ships bundled inside the app (ready, no download). */
+export const BUNDLED_MODEL_ID = 'smollm2-360m-instruct-q8';
+
 const DEFAULT_SETTINGS: Settings = {
-  activeModelId: null,
+  // Default to the preloaded, bundled model so a fresh install has a working
+  // AI tutor immediately, with no download.
+  activeModelId: BUNDLED_MODEL_ID,
   themeMode: 'system',
   genParams: { temperature: 0.4, topP: 0.9, maxTokens: 512 },
   nGpuLayers: 0,
@@ -204,14 +209,19 @@ export const useStore = create<StoreState>()(
       name: 'series65-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ settings: s.settings, progress: s.progress }),
-      version: 2,
+      version: 3,
       // v1: default to loading the model (on the GPU) at launch. Flip existing
       // installs on once; users who later turn it off keep that choice.
       // (v2 briefly added an "open videos in NewPipe" setting, since removed —
       // videos now always try NewPipe → YouTube → browser.)
+      // v3: a preloaded model now ships bundled in the app. Installs that never
+      // picked a model get it as their active model; deliberate choices are kept.
       migrate: (persisted: any, version: number) => {
         if (version < 1 && persisted?.settings) {
           persisted.settings.autoLoadModel = true;
+        }
+        if (version < 3 && persisted?.settings && !persisted.settings.activeModelId) {
+          persisted.settings.activeModelId = BUNDLED_MODEL_ID;
         }
         return persisted;
       },

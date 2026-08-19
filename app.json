@@ -29,7 +29,8 @@
       "expo-dev-client",
       "llama.rn",
       "./plugins/withGeminiNano",
-      "./plugins/withKotlinVersion"
+      "./plugins/withKotlinVersion",
+      "./plugins/withBundledModel"
     ]
   }
 }
