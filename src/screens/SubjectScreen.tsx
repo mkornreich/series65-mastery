@@ -97,6 +97,20 @@ export default function SubjectScreen({ route, navigation }: Props) {
           })
         }
       />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title="Ask AI tutor"
+        icon="💬"
+        variant="ghost"
+        onPress={() => navigation.navigate('Tutor', { topicTitle: subject.title })}
+      />
+      <View style={{ height: spacing.sm }} />
+      <AppButton
+        title="Read in the textbook"
+        icon="📖"
+        variant="ghost"
+        onPress={() => navigation.navigate('Textbook')}
+      />
 
       <Text style={styles.sectionTitle}>Topics</Text>
       {subject.components.map((c) => {
