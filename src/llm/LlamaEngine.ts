@@ -130,6 +130,11 @@ export class LlamaEngine {
       // account." repeated) and never reaches a natural stop. A mild repeat
       // penalty breaks those loops so it concludes on its own.
       penalty_repeat: 1.15,
+      // Optional tail-truncating samplers (tutor path only). When absent, this
+      // object is identical to before — so explain()/other callers and the
+      // retry ladder are byte-for-byte unchanged.
+      ...(params.topK != null ? { top_k: params.topK } : {}),
+      ...(params.minP != null ? { min_p: params.minP } : {}),
     };
     const hot = Math.max(0.7, params.temperature);
     const attempts: Record<string, any>[] = [

@@ -163,6 +163,9 @@ export interface GenerationParams {
   temperature: number;
   topP: number;
   maxTokens: number;
+  /** Optional per-call sampling overrides (tutor path only). */
+  topK?: number;
+  minP?: number;
 }
 
 export interface ChatMessage {

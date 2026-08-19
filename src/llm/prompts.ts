@@ -10,7 +10,10 @@ export const TUTOR_SYSTEM =
   'Format answers in Markdown: use **bold** for key terms, bullet or numbered lists, and tables when comparing things. ' +
   'Write every formula or calculation in LaTeX — inline math between $...$ and display equations between $$...$$ — for ' +
   'example $$\\text{Current Yield} = \\frac{\\text{Annual Coupon}}{\\text{Market Price}}$$. ' +
-  'Write literal dollar amounts as ordinary text (e.g. $1,000), not as math.';
+  'Write literal dollar amounts as ordinary text (e.g. $1,000), not as math. ' +
+  'When reference excerpts are provided, treat them as the source of truth: use their exact numbers, ' +
+  'names, and statute titles, never contradict or embellish them, and never introduce a figure, limit, ' +
+  'or regulation name that is not stated in them.';
 
 /** Exact text the tutor UI stores when a turn produced nothing. Shared so
  *  buildTutorMessages can strip it back out of history (and so TutorScreen and

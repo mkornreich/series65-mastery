@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { ChatMessage, Component, EngineStatus, LLMModelInfo, Question } from '../types';
+import { ChatMessage, Component, EngineStatus, GenerationParams, LLMModelInfo, Question } from '../types';
 import { engine, isLlamaAvailable } from './LlamaEngine';
 import { geminiSupported, geminiAvailable, geminiComplete } from './geminiEngine';
 import {
@@ -309,16 +309,23 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const runText = useCallback(
-    (messages: ChatMessage[], onToken?: (t: string) => void, maxTokens?: number) =>
+    (
+      messages: ChatMessage[],
+      onToken?: (t: string) => void,
+      maxTokens?: number,
+      sampling?: Partial<GenerationParams>
+    ) =>
       runExclusive(async () => {
         await ensureReady();
         setStatus('generating');
         try {
           let out: string;
           const kind = kindOf(activeModelId);
-          // Optional per-call token budget (e.g. the tutor needs more room than
-          // the 512-token default so answers don't stop mid-sentence).
-          const gp = maxTokens ? { ...genParams, maxTokens } : genParams;
+          // Optional per-call token budget (the tutor needs more room than the
+          // 512-token default) and an optional per-call sampling override (the
+          // tutor uses a sharper, tail-truncating profile). Neither mutates the
+          // user's persisted genParams — they are merged into a fresh object.
+          const gp = { ...genParams, ...(maxTokens ? { maxTokens } : {}), ...(sampling || {}) };
           if (kind === 'aicore') {
             out = await geminiComplete(messages, gp.temperature, gp.maxTokens);
             if (onToken && out) onToken(out);
@@ -357,10 +364,16 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       // the prompt (system + ~600-token RAG excerpts + up to 8 history turns)
       // so prompt + answer still fit and llama.cpp doesn't have to shift context.
       const budget = Math.max(512, Math.min(896, nCtx - 1152));
+      // Tutor-only sampling: keep the working temperature (a near-greedy 0.25
+      // made the 360M deterministically repeat its own previous turn), but add
+      // tail-truncating top_k/min_p to prune the low-probability invented-fact
+      // tokens. Passed as a per-call override so the persisted genParams (and
+      // every other path) are intact.
       return runText(
         buildTutorMessages(topicTitle, history, message, context),
         onToken,
-        budget
+        budget,
+        { temperature: 0.4, topP: 0.9, topK: 40, minP: 0.08 }
       );
     },
     [runText, nCtx]

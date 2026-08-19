@@ -93,20 +93,26 @@ function sourceLabel(c: TextbookChunk): string {
 export function buildTutorContext(
   query: string,
   topicTitle?: string,
-  maxChars = 1700,
+  maxChars = 1500,
 ): { context: string; sources: Source[] } {
-  const hits = retrieve((topicTitle ? topicTitle + '. ' : '') + query, 4);
+  // Retrieve a wider candidate pool but include only the top few, kept WHOLE so
+  // a numeric fact ("$10,000", "no contribution limit") or an exact act name is
+  // never sliced off the end of the chunk the model needs to copy from.
+  const hits = retrieve((topicTitle ? topicTitle + '. ' : '') + query, 6);
   if (!hits.length) return { context: '', sources: [] };
 
-  const blocks: string[] = [];
+  const INCLUDE = 3;
+  const PER_CHUNK = 700; // ~p90 of chunk length, so top chunks stay intact
+  const chosen: { chunk: TextbookChunk; text: string }[] = [];
   const sources: Source[] = [];
   const seenAnchor = new Set<string>();
   let used = 0;
   for (const { chunk } of hits) {
-    if (used >= maxChars) break;
-    const room = maxChars - used;
+    if (chosen.length >= INCLUDE || used >= maxChars) break;
+    const room = Math.min(PER_CHUNK, maxChars - used);
+    if (room < 120) break;
     const text = chunk.text.length > room ? chunk.text.slice(0, room) + '…' : chunk.text;
-    blocks.push(`[${sourceLabel(chunk)}]\n${text}`);
+    chosen.push({ chunk, text }); // best-first; any truncation hits the least-relevant tail chunk
     used += text.length;
     if (!seenAnchor.has(chunk.anchor)) {
       seenAnchor.add(chunk.anchor);
@@ -114,12 +120,17 @@ export function buildTutorContext(
     }
   }
 
+  const blocks = chosen.map(({ chunk, text }) => `[${sourceLabel(chunk)}]\n${text}`);
+
   const context =
     'REFERENCE MATERIAL — excerpts from the official Series 65 study textbook. ' +
-    'Use these excerpts as your primary source and stay faithful to them; prefer their wording, numbers, and rules over your own recall. ' +
-    'Always give the student a clear, helpful, substantive answer. ' +
-    'Name the section(s) you drew on (e.g., "Part IV — A."). ' +
-    'If the excerpts only partially cover the question, still answer from sound Series 65 principles and note briefly that the excerpts were partial.\n\n' +
+    'Base your answer on these excerpts and explain it to the student in your own words (do not copy the ' +
+    'excerpts verbatim or label your answer "Excerpt"). Spell every act or regulation name exactly as written ' +
+    'below. Only state a number, dollar amount, limit, percentage, date, or law name if that exact fact appears ' +
+    'below AND is about the thing being asked — never borrow a figure the excerpts give for a different account ' +
+    'or topic, and never invent one; if a specific number is not given, describe the concept in words. ' +
+    'Always give a clear, substantive answer and name the section(s) you used (e.g., "Part IV — A."). ' +
+    'If the excerpts only partially cover the question, answer the covered part and briefly note they were partial.\n\n' +
     blocks.join('\n\n');
 
   return { context, sources };
