@@ -116,8 +116,10 @@ export function buildTutorContext(
 
   const context =
     'REFERENCE MATERIAL — excerpts from the official Series 65 study textbook. ' +
-    'Base your answer on these excerpts and stay faithful to them; do not invent facts, numbers, or rules beyond them. ' +
-    'Name the section(s) you used (e.g., "Part IV — A."). If the excerpts do not cover the question, say the textbook does not cover it and answer briefly and cautiously.\n\n' +
+    'Use these excerpts as your primary source and stay faithful to them; prefer their wording, numbers, and rules over your own recall. ' +
+    'Always give the student a clear, helpful, substantive answer. ' +
+    'Name the section(s) you drew on (e.g., "Part IV — A."). ' +
+    'If the excerpts only partially cover the question, still answer from sound Series 65 principles and note briefly that the excerpts were partial.\n\n' +
     blocks.join('\n\n');
 
   return { context, sources };

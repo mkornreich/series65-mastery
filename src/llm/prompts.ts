@@ -11,6 +11,23 @@ export const TUTOR_SYSTEM =
   'example $$\\text{Current Yield} = \\frac{\\text{Annual Coupon}}{\\text{Market Price}}$$. ' +
   'Write literal dollar amounts as ordinary text (e.g. $1,000), not as math.';
 
+/** Exact text the tutor UI stores when a turn produced nothing. Shared so
+ *  buildTutorMessages can strip it back out of history (and so TutorScreen and
+ *  this filter never drift apart). */
+export const TUTOR_EMPTY_FALLBACK =
+  'The model returned an empty response. Try rephrasing your question, or pick a different model in Settings.';
+
+/** Drop assistant turns that carry no real content (blank, or the empty-response
+ *  fallback). Feeding those back into the chat template biases the model toward
+ *  another empty turn. User turns are always kept. */
+function cleanTutorHistory(history: ChatMessage[]): ChatMessage[] {
+  return history.filter((m) => {
+    if (m.role !== 'assistant') return true;
+    const c = (m.content || '').trim();
+    return !!c && !c.startsWith(TUTOR_EMPTY_FALLBACK.slice(0, 40));
+  });
+}
+
 export function buildExplainMessages(
   question: Question,
   chosenIndex: number
@@ -49,7 +66,7 @@ export function buildTutorMessages(
     (context ? `\n\n${context}` : '');
   return [
     { role: 'system', content: sys },
-    ...history.slice(-8),
+    ...cleanTutorHistory(history).slice(-8),
     { role: 'user', content: userMessage },
   ];
 }

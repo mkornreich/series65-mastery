@@ -16,8 +16,10 @@ import {
   Keyboard,
   Animated,
   Linking,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { spacing, font, radius, ThemeColors } from '../theme/theme';
@@ -27,6 +29,7 @@ import { ChatMessage, Question } from '../types';
 import { AppButton } from '../components/ui';
 import { Markdown } from '../components/markdown';
 import { buildTutorContext, sourceUrl, Source } from '../llm/rag';
+import { TUTOR_EMPTY_FALLBACK } from '../llm/prompts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
 
@@ -128,6 +131,11 @@ export default function TutorScreen({ route, navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const llm = useLLM();
   const insets = useSafeAreaInsets();
+  // Native-stack header height (includes the top safe-area inset). Used as the
+  // KeyboardAvoidingView offset so the lifted input lands exactly on the
+  // keyboard's top edge, reconciling the scene-relative layout frame with the
+  // keyboard's absolute screenY.
+  const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   // Textbook sections the RAG retriever grounded each assistant reply in, keyed
   // by that message's index — rendered as tappable citations under the answer.
@@ -148,16 +156,18 @@ export default function TutorScreen({ route, navigation }: Props) {
     [llm]
   );
 
-  // The app is edge-to-edge, so the soft keyboard draws over the content instead
-  // of resizing the window. Track its height and lift the whole column above it,
-  // keeping every message and the input box visible while typing.
-  const [kbHeight, setKbHeight] = useState(0);
+  // The app is edge-to-edge (decorFitsSystemWindows=false), so adjustResize no
+  // longer shrinks the window for the IME and endCoordinates.height is
+  // unreliable (0). KeyboardAvoidingView lifts the column using the keyboard's
+  // screenY instead. We only track visibility to trim the resting nav-bar gap
+  // and to keep the chat pinned to the latest message while typing.
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKbHeight(e.endCoordinates?.height ?? 0);
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
       show.remove();
       hide.remove();
@@ -216,9 +226,7 @@ export default function TutorScreen({ route, navigation }: Props) {
           if (last && last.role === 'assistant' && !last.content.trim()) {
             copy[copy.length - 1] = {
               role: 'assistant',
-              content:
-                (out && out.trim()) ||
-                'The model returned an empty response. Try rephrasing your question, or pick a different model in Settings.',
+              content: (out && out.trim()) || TUTOR_EMPTY_FALLBACK,
             };
           }
           return copy;
@@ -243,7 +251,11 @@ export default function TutorScreen({ route, navigation }: Props) {
   );
 
   return (
-    <View style={[styles.flex, { paddingBottom: kbHeight }]}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior="padding"
+      keyboardVerticalOffset={headerHeight}
+    >
       <ScrollView
         ref={scrollRef}
         style={styles.flex}
@@ -364,7 +376,7 @@ export default function TutorScreen({ route, navigation }: Props) {
       <View
         style={[
           styles.inputRow,
-          { paddingBottom: kbHeight ? spacing.sm : insets.bottom + spacing.sm },
+          { paddingBottom: keyboardVisible ? spacing.sm : insets.bottom + spacing.sm },
         ]}
       >
         <TextInput
@@ -384,7 +396,7 @@ export default function TutorScreen({ route, navigation }: Props) {
           <Text style={styles.sendText}>➤</Text>
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -79,8 +79,14 @@ export class LlamaEngine {
     }
   }
 
+  // Prefer the non-empty of the two result fields. `text` is the raw output;
+  // `content` is the reasoning/tool-filtered view. On a plain instruct model
+  // they match, but if one is blank we still surface the other.
   private extractText(res: any): string {
-    return String(res?.text ?? res?.content ?? '').trim();
+    const text = res?.text != null ? String(res.text).trim() : '';
+    if (text) return text;
+    const content = res?.content != null ? String(res.content).trim() : '';
+    return content;
   }
 
   async complete(
@@ -89,19 +95,63 @@ export class LlamaEngine {
     onToken?: (t: string) => void
   ): Promise<string> {
     if (!this.context) throw new Error('No model is loaded.');
-    const res = await this.context.completion(
+
+    // A tiny instruct model (e.g. SmolLM2-360M) will sometimes sample its
+    // end-of-turn token FIRST — emitting zero content tokens and returning an
+    // empty string — especially on prompts whose grounding block primes a
+    // terse/refusing answer. Detect that (nothing streamed AND empty result)
+    // and escalate: reseed hotter, then, as a hard guarantee, forbid the
+    // end-of-generation tokens so real content MUST be produced.
+    const base: Record<string, any> = {
+      messages,
+      jinja: true,
+      n_predict: params.maxTokens,
+      temperature: params.temperature,
+      top_p: params.topP,
+    };
+    const hot = Math.max(0.7, params.temperature);
+    const attempts: Record<string, any>[] = [
+      base,
+      // Retry 1: reprocess with a fresh seed and a flatter distribution so the
+      // end-of-turn token is far less likely to win the first position.
+      { ...base, seed: Date.now() & 0x7fffffff, temperature: hot, top_p: 0.95 },
+      // Retry 2 (guarantee): forbid EOS/EOG outright so at least some content
+      // is emitted. Cap length so a rambly tail stays bounded.
       {
-        messages,
-        jinja: true,
-        n_predict: params.maxTokens,
-        temperature: params.temperature,
-        top_p: params.topP,
+        ...base,
+        ignore_eos: true,
+        temperature: hot,
+        top_p: 0.95,
+        n_predict: Math.min(320, params.maxTokens),
       },
-      (data: any) => {
-        if (onToken && data?.token) onToken(data.token);
+    ];
+
+    let last = '';
+    for (let i = 0; i < attempts.length; i++) {
+      // Only clear the KV cache on retries — the first attempt keeps the normal
+      // prefix-cache fast path (and leaves the working case byte-for-byte
+      // unchanged). Clearing before a retry guarantees the prompt is genuinely
+      // re-evaluated rather than reusing the state that just produced nothing.
+      if (i > 0) {
+        try {
+          await this.context.clearCache(false);
+        } catch {
+          /* ignore — older native builds may lack clearCache */
+        }
       }
-    );
-    return this.extractText(res);
+      let acc = '';
+      const res = await this.context.completion(attempts[i], (data: any) => {
+        if (data?.token) {
+          acc += data.token;
+          if (onToken) onToken(data.token);
+        }
+      });
+      const text = this.extractText(res) || acc.trim();
+      // Return as soon as anything came out (result field OR streamed tokens).
+      if (text) return text;
+      last = text;
+    }
+    return last;
   }
 
   async completeJson(
