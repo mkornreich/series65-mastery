@@ -8,7 +8,7 @@ import { spacing, font, masteryLabel, ThemeColors } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useStore } from '../store/useStore';
 import { getSubject } from '../data/curriculum';
-import { textbookSectionForComponent } from '../data/textbook';
+import { textbookSectionForComponent, textbookPartForSubject } from '../data/textbook';
 import { masteryScore, masteryLevel, subjectMastery } from '../mastery/engine';
 import { bankBySubject } from '../mastery/selection';
 import { useLLM } from '../llm/LLMProvider';
@@ -109,7 +109,11 @@ export default function SubjectScreen({ route, navigation }: Props) {
         title="Read in the textbook"
         icon="📖"
         variant="ghost"
-        onPress={() => navigation.navigate('Textbook')}
+        onPress={() =>
+          navigation.navigate('Textbook', {
+            scrollToPart: textbookPartForSubject(subject.id) ?? undefined,
+          })
+        }
       />
 
       <Text style={styles.sectionTitle}>Topics</Text>

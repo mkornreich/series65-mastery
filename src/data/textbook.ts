@@ -87,3 +87,8 @@ export function textbookSectionForComponent(
 ): TextbookSectionMeta | null {
   return componentSectionMap()[componentId] ?? null;
 }
+
+/** The textbook Part that an exam subject maps to, e.g. "Part IV" (or null). */
+export function textbookPartForSubject(subjectId: string): string | null {
+  return PART_OF_SUBJECT[subjectId] ?? null;
+}

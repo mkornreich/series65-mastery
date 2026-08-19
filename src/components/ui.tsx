@@ -27,6 +27,7 @@ export function Screen({
   padded = true,
   topInset = false,
   settingsGear = false,
+  scrollViewRef,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
@@ -36,6 +37,8 @@ export function Screen({
   topInset?: boolean;
   /** Overlay a settings gear in the top-right that opens the Settings screen. */
   settingsGear?: boolean;
+  /** Ref to the inner ScrollView, e.g. to programmatically scroll to a section. */
+  scrollViewRef?: React.RefObject<ScrollView | null>;
 }) {
   const insets = useSafeAreaInsets();
   const styles = useStyles();
@@ -47,6 +50,7 @@ export function Screen({
   };
   const body = scroll ? (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.flex}
       contentContainerStyle={[base, contentStyle]}
       keyboardShouldPersistTaps="handled"

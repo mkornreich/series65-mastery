@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Screen } from '../components/ui';
@@ -9,9 +9,14 @@ import { textbookSections, partLabel, TextbookSectionMeta } from '../data/textbo
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Textbook'>;
 
-export default function TextbookScreen({ navigation }: Props) {
+export default function TextbookScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const scrollToPart = route.params?.scrollToPart;
+  const scrollRef = useRef<ScrollView | null>(null);
+  // Guard so we only auto-scroll to the requested Part once (its heading's
+  // onLayout can fire more than once, e.g. on theme change).
+  const scrolledRef = useRef(false);
 
   const groups = useMemo(() => {
     const secs = textbookSections();
@@ -28,7 +33,7 @@ export default function TextbookScreen({ navigation }: Props) {
   }, []);
 
   return (
-    <Screen>
+    <Screen scrollViewRef={scrollRef}>
       <Text style={styles.h1}>📖 Series 65 Textbook</Text>
       <Text style={styles.sub}>
         The full study text, organized by exam area. Tap a section to read it — the
@@ -36,7 +41,20 @@ export default function TextbookScreen({ navigation }: Props) {
       </Text>
 
       {groups.map((g) => (
-        <View key={g.part || 'appendix'} style={styles.group}>
+        <View
+          key={g.part || 'appendix'}
+          style={styles.group}
+          onLayout={
+            scrollToPart && g.part === scrollToPart
+              ? (e) => {
+                  if (scrolledRef.current) return;
+                  scrolledRef.current = true;
+                  const y = Math.max(0, e.nativeEvent.layout.y - spacing.md);
+                  scrollRef.current?.scrollTo({ y, animated: false });
+                }
+              : undefined
+          }
+        >
           <Text style={styles.part}>{partLabel(g.part)}</Text>
           {g.items.map((s) => (
             <Pressable
