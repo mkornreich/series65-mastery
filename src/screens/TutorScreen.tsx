@@ -218,15 +218,16 @@ export default function TutorScreen({ route, navigation }: Props) {
           },
           context
         );
-        // If nothing streamed (empty completion), fall back to the resolved text
-        // or a clear message so the bubble doesn't stay stuck on "Thinking…".
+        // Finalize the bubble to the resolved text: it's the authoritative
+        // answer (trimmed of any mid-sentence tail, and — after a retry — only
+        // the successful attempt's output, not the concatenated stream).
         setMessages((m) => {
           const copy = [...m];
           const last = copy[copy.length - 1];
-          if (last && last.role === 'assistant' && !last.content.trim()) {
+          if (last && last.role === 'assistant') {
             copy[copy.length - 1] = {
               role: 'assistant',
-              content: (out && out.trim()) || TUTOR_EMPTY_FALLBACK,
+              content: (out && out.trim()) || last.content.trim() || TUTOR_EMPTY_FALLBACK,
             };
           }
           return copy;

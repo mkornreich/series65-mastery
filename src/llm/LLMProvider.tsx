@@ -309,21 +309,24 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const runText = useCallback(
-    (messages: ChatMessage[], onToken?: (t: string) => void) =>
+    (messages: ChatMessage[], onToken?: (t: string) => void, maxTokens?: number) =>
       runExclusive(async () => {
         await ensureReady();
         setStatus('generating');
         try {
           let out: string;
           const kind = kindOf(activeModelId);
+          // Optional per-call token budget (e.g. the tutor needs more room than
+          // the 512-token default so answers don't stop mid-sentence).
+          const gp = maxTokens ? { ...genParams, maxTokens } : genParams;
           if (kind === 'aicore') {
-            out = await geminiComplete(messages, genParams.temperature, genParams.maxTokens);
+            out = await geminiComplete(messages, gp.temperature, gp.maxTokens);
             if (onToken && out) onToken(out);
           } else if (kind === 'litertlm') {
-            out = await litertComplete(messages, genParams.temperature, genParams.topP);
+            out = await litertComplete(messages, gp.temperature, gp.topP);
             if (onToken && out) onToken(out);
           } else {
-            out = await engine.complete(messages, genParams, onToken);
+            out = await engine.complete(messages, gp, onToken);
           }
           setStatus('ready');
           return out;
@@ -348,8 +351,19 @@ export function LLMProvider({ children }: { children: React.ReactNode }) {
       message: string,
       onToken?: (t: string) => void,
       context?: string
-    ) => runText(buildTutorMessages(topicTitle, history, message, context), onToken),
-    [runText]
+    ) => {
+      // Tutor answers were being cut off mid-sentence at the 512-token default.
+      // Give them room to finish, but reserve enough of the context window for
+      // the prompt (system + ~600-token RAG excerpts + up to 8 history turns)
+      // so prompt + answer still fit and llama.cpp doesn't have to shift context.
+      const budget = Math.max(512, Math.min(896, nCtx - 1152));
+      return runText(
+        buildTutorMessages(topicTitle, history, message, context),
+        onToken,
+        budget
+      );
+    },
+    [runText, nCtx]
   );
 
   const generateQuestions = useCallback(

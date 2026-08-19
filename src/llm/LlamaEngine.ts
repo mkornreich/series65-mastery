@@ -89,6 +89,24 @@ export class LlamaEngine {
     return content;
   }
 
+  // A small model that hits the token cap (no natural end-of-sequence) leaves a
+  // dangling half-sentence. Trim back to the last completed sentence / list
+  // item so the answer never ends mid-thought. Conservative: if the text
+  // already ends cleanly, or trimming would gut it, leave it as-is.
+  private trimToSentence(text: string): string {
+    const t = text.trimEnd();
+    if (!t) return t;
+    // Already ends on terminal punctuation or a closing quote/bracket.
+    if (/[.!?:”’")\]]$/.test(t)) return t;
+    // Cut to the last sentence-ending punctuation followed by a space/newline.
+    const m = t.match(/^[\s\S]*[.!?](?=[\s"'”’)\]]|$)/);
+    if (m && m[0].trim().length >= 40) return m[0].trimEnd();
+    // Otherwise drop just the trailing (incomplete) line.
+    const nl = t.lastIndexOf('\n');
+    if (nl >= 40) return t.slice(0, nl).trimEnd();
+    return t;
+  }
+
   async complete(
     messages: ChatMessage[],
     params: GenerationParams,
@@ -108,6 +126,10 @@ export class LlamaEngine {
       n_predict: params.maxTokens,
       temperature: params.temperature,
       top_p: params.topP,
+      // A tiny model degenerates into verbatim loops ("… contribute to a UTMA
+      // account." repeated) and never reaches a natural stop. A mild repeat
+      // penalty breaks those loops so it concludes on its own.
+      penalty_repeat: 1.15,
     };
     const hot = Math.max(0.7, params.temperature);
     const attempts: Record<string, any>[] = [
@@ -146,9 +168,13 @@ export class LlamaEngine {
           if (onToken) onToken(data.token);
         }
       });
-      const text = this.extractText(res) || acc.trim();
-      // Return as soon as anything came out (result field OR streamed tokens).
-      if (text) return text;
+      let text = this.extractText(res) || acc.trim();
+      if (text) {
+        // If the model hit the token cap instead of ending naturally, the tail
+        // is a half-finished sentence — trim it back to a clean stopping point.
+        if (res && res.stopped_eos === false) text = this.trimToSentence(text);
+        return text;
+      }
       last = text;
     }
     return last;
